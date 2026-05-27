@@ -1,0 +1,90 @@
+<script lang="ts">
+import { invalidate } from '$app/navigation';
+import { resolve } from '$app/paths';
+import Pickems from '$lib/core/games/HS/features/pickaroo/svelted/ui/Pickems.svelte';
+import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte.js';
+import ebs from '$lib/svelted/ebs';
+import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
+import Empty from '$lib/svelted/ui/layout/Empty.svelte';
+import Header from '$lib/svelted/ui/layout/Header.svelte';
+import type { Stat } from '$lib/svelted/ui/layout/Stats.svelte';
+import Stats from '$lib/svelted/ui/layout/Stats.svelte';
+import { has, hasnot } from '$lib/utilz/morph';
+import { tc } from '$lib/utilz/polly';
+
+let { data, params } = $props();
+
+let error = $state<toothy<string>>();
+let loading = $state(false);
+
+// Optimistic pick — set on submit, cleared when server fetch confirms
+let optimisticPick = $state<{ pickarooId: number; pickable: string } | null>(null);
+
+const category = $derived(data.categories.find(c => c.mode === params.mode));
+const totals = $derived(data.totals);
+
+// then s.pickems.hits / s.pickems.misses / s.pickems.attempts per row
+
+// At most one open pickaroo per category (current schema; will be per-eventable when more pickaroo types ship)
+const pickaroo = $derived(data.pickaroos?.find(p => p.categoryId === category?.id));
+
+// Viewer's open pickem against that pickaroo
+const pickem = $derived(data.pickems.find(p => p.pickarooId === pickaroo?.id && p.eventable === null));
+
+const currentPickable = $derived(
+  optimisticPick && optimisticPick.pickarooId === pickaroo?.id ?
+    pickaroo.pickables.find(p => p?.id === optimisticPick?.pickable)
+  : pickaroo?.pickables.find(p => p?.id === pickem?.pickable)
+);
+
+const stated = ({ attempts = 0, hits = 0, misses = 0 } = {}) =>
+  [
+    { title: 'Attempts', value: attempts, icon: '🎲', varient: 'text-primary' },
+    { title: 'Misses', value: misses, icon: '💨', varient: 'text-base-content' },
+    { title: 'Hits', value: hits, icon: '🎰', varient: 'text-success' }
+  ] as Stat[];
+
+usePubSub<'pickaroos' | 'pickems'>({
+  'pickaroos:updated': () => invalidate(data.dependz),
+  'pickems:updated': () => {
+    optimisticPick = null;
+    invalidate(data.dependz);
+  }
+});
+</script>
+
+<Header {loading} {error} />
+
+<div class="page-content">
+  {#if !category && totals.length}
+    <Stats stats={stated(totals.find(hasnot('category'))?.pickems)} />
+
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {#each totals.filter(has('category')) as { pickems, category } (category.id)}
+        <Categorically
+          title={category.mode}
+          href={resolve('/app/[game]/[[mode]]/pickaroo', {
+            game: params.game,
+            mode: category.mode
+          })}>
+          <div class="divider my-0"></div>
+          <Stats class={'rounded-b-none'} stats={stated({ attempts: pickems.attempts })} />
+          <hr class="-my-2 border-t border-dashed border-base-content/20" />
+          <Stats class={'rounded-t-none'} stats={stated({ hits: pickems.hits, misses: pickems.misses })} />
+        </Categorically>
+      {:else}{/each}
+    </div>
+  {:else if pickaroo}
+    <Pickems
+      pickables={pickaroo.pickables}
+      pickem={currentPickable}
+      submit={async pick => {
+        loading = true;
+        error = await tc(async () => {
+          optimisticPick = { pickarooId: pickaroo.id, pickable: pick.id };
+          await ebs({ path: `/app/${params.game}/${params.mode}/pickaro` }).post({ pick, pickarooId: pickaroo.id });
+        });
+        loading = false;
+      }} />
+  {:else}<Empty icon="⏳" tagline="Pickarooooooing..." animate={true} />{/if}
+</div>

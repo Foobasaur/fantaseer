@@ -1,0 +1,16 @@
+{
+  "prettier.singleQuote": true,
+  "svelte.enable-ts-plugin": true,
+  "prettier.svelteIndentScriptAndStyle": false,
+  "prettier.singleAttributePerLine": false,
+  "prettier.experimentalTernaries": true,
+  "debug.javascript.autoAttachFilter": "onlyWithFlag"
+  // "debug.javascript.autoAttachFilter": "onlyWithFlag"
+  // "terminal.integrated.openLinksAction": "browser",
+  // "debug.javascript.autoAttachFilter": "smart",
+  // "debug.javascript.autoAttachSmartPattern": ["${workspaceFolder}/**", "!**/node_modules/**", "!**/.sst/**"],
+  // "workbench.externalUriOpeners": {
+  //   "http://*": "default",
+  //   "https://*": "default"
+  // }
+}

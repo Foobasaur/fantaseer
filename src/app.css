@@ -1,0 +1,36 @@
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+@plugin 'daisyui' {
+  themes:
+    light --default,
+    dark --prefersdark;
+}
+
+@custom-variant xs (@media (width >= 26rem));
+
+@utility page-content {
+  @apply mx-auto space-y-3 ml-1.5 -mr-1 my-2 p-1;
+}
+
+@utility hs-icon {
+  @apply relative h-6 w-5 bg-cover bg-center bg-no-repeat transition-opacity;
+
+  &.hs-icon-mana {
+    background-image: url('$lib/assets/hs/icons/icon_mana_68x68_@2x.png');
+  }
+
+  &.hs-icon-tier {
+    background-image: url('$lib/assets/hs/icons/bg/tier-glow.png');
+  }
+
+  > span {
+    @apply absolute inset-0 flex textarea-md items-center justify-center font-extrabold text-white;
+    text-shadow:
+      -1px -1px 0 #000,
+      1px -1px 0 #000,
+      -1px 1px 0 #000,
+      1px 1px 0 #000;
+  }
+}
