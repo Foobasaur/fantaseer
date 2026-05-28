@@ -29,8 +29,8 @@ export const init = async () => {
     console.log('Twitch Extension Viewer:', Twitch.I.viewer);
     console.log('Twitch Extension User:', Twitch.I.helixer);
     Twitch.I.pubsub?.onBroadcast<DB.FeedEntry<DB.Tablekey>>(async msg => {
-      Twitch.I.emit(msg.data.event, {payload: msg.data.payload, values: msg.data.values });
       console.log('Received PubSub broadcast message:', msg);
+      Twitch.I.emit(msg.data.event, {payload: msg.data.payload, values: msg.data.values });
     });
   } catch (e) {
     throw new Error(

@@ -1,16 +1,17 @@
 {
   "prettier.singleQuote": true,
   "svelte.enable-ts-plugin": true,
-  "prettier.svelteIndentScriptAndStyle": false,
-  "prettier.singleAttributePerLine": false,
+  "prettier.useTabs": false,
+  "prettier.tabWidth": 2,
+  "prettier.printWidth": 126,
+  "prettier.arrowParens": "avoid",
+  "prettier.trailingComma": "none",
+  "prettier.objectWrap": "preserve",
+  "prettier.bracketSameLine": true,
+  "prettier.singleAttributePerLine": true,
   "prettier.experimentalTernaries": true,
-  "debug.javascript.autoAttachFilter": "onlyWithFlag"
-  // "debug.javascript.autoAttachFilter": "onlyWithFlag"
-  // "terminal.integrated.openLinksAction": "browser",
-  // "debug.javascript.autoAttachFilter": "smart",
-  // "debug.javascript.autoAttachSmartPattern": ["${workspaceFolder}/**", "!**/node_modules/**", "!**/.sst/**"],
-  // "workbench.externalUriOpeners": {
-  //   "http://*": "default",
-  //   "https://*": "default"
-  // }
+  "prettier.experimentalOperatorPosition": "end",
+  "prettier.svelteBracketNewLine": false,
+  "prettier.svelteIndentScriptAndStyle": false,
+  "debug.javascript.autoAttachFilter": "always"
 }

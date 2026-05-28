@@ -174,7 +174,10 @@ export const pickaroo = async () => {
   return {
     get: async () => {
       // Hydrate pickable IDs into game-module display data
-      const pickaroos = (rows => rows?.map(p => ({ ...p, pickables: p.pickables.map(id => module.fromPickable(id)) })))(
+      const pickaroos = (rows =>
+        rows
+          ?.map(p => ({ ...p, pickables: p.pickables.map(id => module.fromPickable(id)).filter(Boolean) }))
+          .filter(roo => roo.pickables.length))(
         player &&
           (await $get('pickaroos')({
             where: { playerId: player.id, categoryId: category ? category.id : ['isNotNull'], outcomeId: ['isNull'] }

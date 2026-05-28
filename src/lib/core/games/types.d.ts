@@ -38,7 +38,7 @@ export namespace Game {
    * Game module contract.
    * All game modules implement this interface.
    */
-  export interface IGame<G extends Code, out T> {
+  export interface IGame<G extends Code, out T, in Tmodes extends readonly string[] = string[]> {
     readonly code: G;
     readonly name: string;
 
@@ -54,8 +54,8 @@ export namespace Game {
     init(): Promise<this>;
 
     // Data access and mapping
-    draftables: (mode?: string) => string[];
-    pickables: (mode?: string) => T[];
+    draftables: (mode?: (Tmodes)[number]) => string[];
+    pickables: (mode?: (Tmodes)[number]) => T[];
     toPickable: {
       (entity: T): string;
       (entity: T[]): string[];

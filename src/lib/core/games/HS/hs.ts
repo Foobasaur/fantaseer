@@ -174,8 +174,8 @@ export const filtrations = {
 // Battlegrounds configuration
 export const battlegrounds = {
   units: strumbolize('Unit Type', {
-    // HERO: 'Hero',
-    // WORP_MINION: 'Timewarped',
+    HERO: 'Hero',
+    WORP_MINION: 'Timewarped',
     MINION: 'Minion',
     BATTLEGROUND_SPELL: 'Spell'
   }),

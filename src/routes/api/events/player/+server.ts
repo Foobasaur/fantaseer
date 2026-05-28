@@ -1,14 +1,14 @@
 import { db, tablez } from '$lib/server/db/client';
-import { $get, $insert } from '$lib/server/db/kit';
+import { $insert } from '$lib/server/db/kit';
 import { Viewer } from '$lib/server/db/queries/identity';
 import { chatters } from '$lib/server/twitch/api';
 import { authenticate } from '$lib/server/twitch/auth';
 import { PubSubServer } from '$lib/server/twitch/PubSubServer';
 import { catchy } from '$lib/utilz/polly';
-import { eqstart } from '$lib/utilz/stringz';
 import type { DB } from '@';
 import { error } from '@sveltejs/kit';
 import { sql } from 'drizzle-orm';
+import { inspect } from 'util';
 import type { RequestHandler } from './$types';
 
 // OnGameStart
@@ -19,7 +19,7 @@ import type { RequestHandler } from './$types';
 // OnPlayerDraw
 // OnOpponentPlay
 const PreconditionFailed = (message: string) => error(412, message);
-const PICKAROO_TRIGGERS = new Set(['OnGameStart']) as ReadonlySet<string>;
+const PICKAROO_TRIGGERS = new Set(['OnGameStart', 'OnAll8Found']) as ReadonlySet<string>;
 const PICKAROO_RESOLVES = new Map<string, readonly string[]>([['OnPlayerDraw', ['OnGameStart']]]) as ReadonlyMap<
   string,
   readonly string[]
@@ -49,14 +49,12 @@ export const POST: RequestHandler = ({ request, url }) =>
     const payload = (await request.json()) as Payload[];
     for (const { eventable, pickables, meta } of payload) {
       const values = { categoryId, playerId: player.id, eventable, meta: { ...meta, seed } };
-      console.log('Processing event:', { values, pickables });
+      console.log('Processing event:', inspect({ values, pickables }, { depth: null, colors: true }));
 
-      if (eqstart(eventable, 'ongame')) {
-        if (PICKAROO_TRIGGERS.has(eventable) && meta?.role === 'player') pickaroos.push({ ...values, pickables });
-      }
+      if (PICKAROO_TRIGGERS.has(eventable)) pickaroos.push({ ...values, pickables });
       for (const pickable of pickables) events.push({ ...values, pickable });
     }
-    if (!events.length && !pickaroos.length) PreconditionFailed('No valid events to process');
+    if (!events.length && !pickaroos.some(p => p.pickables.length)) PreconditionFailed('No valid events to process');
     // ... return { ..., dropped }
 
     // Process everything in a transaction, including the post-commit broadcast preparation (chatters, viewers)

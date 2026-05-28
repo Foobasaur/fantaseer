@@ -52,7 +52,7 @@ const tagFromAttrs = (a: Record<string, string>): Tag => {
   }
 };
 
-export const parse = (xml: string): CardDefs => {
+export const parse = (xml: string, hasInts?: number[]): CardDefs => {
   const build = Number(xml.match(/<CardDefs\s+build="(\d+)"/)?.[1] ?? 0);
   const entities: Entity[] = [];
 
@@ -71,13 +71,8 @@ export const parse = (xml: string): CardDefs => {
       for (const [, lang, text] of inner.matchAll(LOC_CHILD)) value[lang] = decode(text);
       tags[Number(a.enumID)] = { enumID: Number(a.enumID), name: a.name, type: 'LocString', value };
     }
-
-    entities.push({
-      cardID: attrs.CardID,
-      id: Number(attrs.ID),
-      version: Number(attrs.version),
-      tags
-    });
+    if (hasInts && !hasInts.some(id => tags[id]?.type === 'Int')) continue;
+    else entities.push({ cardID: attrs.CardID, id: Number(attrs.ID), version: Number(attrs.version), tags });
   }
 
   return { build, entities };

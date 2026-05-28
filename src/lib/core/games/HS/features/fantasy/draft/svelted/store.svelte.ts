@@ -10,7 +10,7 @@ const pending = $state<Partial<Record<GameMode,  { picks: Card[]; filter: Filter
 export const create = (mode: 'Standard' | 'Arena' | 'Wild' | 'Battlegrounds' | (string & {}) = 'Standard') => {
   const key = mode as GameMode;
   const rules = [basic, bg].find(r => r.modes.includes(key)) || basic;
-   const session = pending[key] ??= {
+  pending[key] ??= {
     picks: [],
     filter: {
       mana: -1,
@@ -24,6 +24,7 @@ export const create = (mode: 'Standard' | 'Arena' | 'Wild' | 'Battlegrounds' | (
     }
   };
 
+ const session = pending[key]
   return {
     get picks() {
       return session.picks;

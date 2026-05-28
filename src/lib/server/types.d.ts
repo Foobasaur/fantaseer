@@ -18,7 +18,7 @@ export namespace Server {
       StrictUnion<{ jwt: Jwt } | { oauth: Oauth }>;
 
     interface IAuthProvider<Meta, Jwt> {
-      resolve(jwt: string, mode: string): Promise<toothy<User<Meta, Jwt>>>;
+      resolve(jwt?: string | null, mode?: string | null): Promise<toothy<User<Meta, Jwt>>>;
     }
   }
 

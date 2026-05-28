@@ -13,13 +13,7 @@ export default $config({
     const db = new sst.aws.Postgres('MyPostgres', {
       vpc,
       proxy: true,
-      dev: {
-        host: 'localhost',
-        port: 5433,
-        username: 'root',
-        password: 'mysecretpassword',
-        database: 'local'
-      }
+      dev: { host: 'localhost', port: 5433, username: 'root', password: 'mysecretpassword', database: 'local' }
     });
 
     // Drizzle Studio in dev
@@ -39,7 +33,7 @@ export default $config({
       },
       transform: {
         server: args => {
-          args.timeout = '180 seconds';
+          args.timeout = '30 seconds';
           args.memory = '4096 MB';
         }
       }

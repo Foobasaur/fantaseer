@@ -82,7 +82,7 @@ usePubSub<'pickaroos' | 'pickems'>({
         loading = true;
         error = await tc(async () => {
           optimisticPick = { pickarooId: pickaroo.id, pickable: pick.id };
-          await ebs({ path: `/app/${params.game}/${params.mode}/pickaro` }).post({ pick, pickarooId: pickaroo.id });
+          await ebs({ path: `/app/${params.game}/${params.mode}/pickaroo` }).post({ pick, pickarooId: pickaroo.id });
         });
         loading = false;
       }} />

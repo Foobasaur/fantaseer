@@ -1,8 +1,8 @@
 // Hearthstone json API client with CDN URL construction
 import { cached } from '$lib/utilz/fscache';
 import type { Card, ICard, ImgResolution } from '../types';
-import { FormatType, GameType } from './enums';
-import { parse, type CardDefs } from './xdefs';
+import { CardType, FormatType, GameTag, GameType } from './enums';
+import { hasInts, parse, type CardDefs } from './xdefs';
 
 const art = (id: string, url = 'https://art.hearthstonejson.com/v1') => {
   const resolutions = ['256x', '512x', 'orig'];
@@ -44,15 +44,16 @@ export default async function ({
     )
   );
 
-  const xcards =
+  const battlegrounds =
     ['mock', 'extension'].includes(import.meta.env.VITE_TARGET) ?
-      await cached('CardDefs', async () => {
+      await cached('battlegrounds', async () => {
         const res = await fetch(xdefs);
-        return parse(await res.text());
+        const defs = parse(await res.text(),[GameTag.BACON_HERO_CAN_BE_DRAFTED, GameTag.BACON_TIMEWARPED, GameTag.IS_BACON_POOL_MINION, GameTag.IS_BACON_POOL_SPELL]);
+        return defs.entities.map(e => e.cardID);
       })
     : await (async () => {
-        const { default: raw } = await import('../../../../../../.cache/CardDefs.json?raw');
-        return JSON.parse(raw) as CardDefs;
+        const { default: raw } = await import('../../../../../../.cache/battlegrounds.json?raw');
+        return JSON.parse(raw) as string[];
       })();
 
   const cards = [...collectible, ...all].reduce((acc, card) => {
@@ -61,5 +62,5 @@ export default async function ({
     return acc;
   }, [] as Card[]);
 
-  return { cards, xcards, underground, standard, wild };
+  return { cards, battlegrounds, underground, standard, wild };
 }

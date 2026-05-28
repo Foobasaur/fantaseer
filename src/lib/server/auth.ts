@@ -24,18 +24,20 @@ const verifyJwt = <T>(token: string, secret: string) => {
 export const providers = {
   twitch: {
     resolve: async (token, mode) => {
-      const jwt = verifyJwt<Twitch.Ext.JWTPayload>(token, env.TWITCH_EXTENSION_SECRET);
+      let jwt: toothy<Twitch.Ext.JWTPayload>;
       try {
-        if (!jwt?.user_id || jwt.user_id?.startsWith('A')) error(401, 'Invalid JWT');
+        jwt = token && verifyJwt<Twitch.Ext.JWTPayload>(token, env.TWITCH_EXTENSION_SECRET);
+        if (!jwt || !jwt.user_id || jwt.user_id?.startsWith('A')) error(401, 'Invalid JWT');
         const opts = { platform: 'twitch', platformId: jwt.user_id };
         const player = jwt.role === 'broadcaster' && mode === 'config';
         const identity = await (player ? Player<Twitch.Player> : Viewer<Twitch.Viewer>)(opts);
         const [authenticated] = identity.length ? identity : await Viewer<Twitch.Viewer>(opts);
         return { authenticated, jwt }; // ✅ wrap only the identity case
       } catch (err) {
-        console.warn('Auth provider error:', err);
-        if (process.env.VITE_TARGET !== 'mock') return jwt && { anonymous: {}, jwt };
-        else
+        if (process.env.VITE_TARGET !== 'mock') {
+          console.warn('Auth provider error:', err);
+          return jwt && { anonymous: {}, jwt };
+        } else
           return (mock => ({
             authenticated: mock,
             jwt: {

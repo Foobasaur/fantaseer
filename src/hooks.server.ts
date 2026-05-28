@@ -10,7 +10,7 @@ export const init: ServerInit = async () => {
 export const handle: Handle = async ({ event, resolve }) => {
   const jwt = event.request.headers.get('x-ext-auth-jwt');
   const mode = event.request.headers.get('x-ext-ctx-mode');
-  event.locals.user = jwt && mode && (await providers.twitch.resolve(jwt, mode));
+  event.locals.user = (await providers.twitch.resolve(jwt, mode));
   return resolve(event);
 };
 

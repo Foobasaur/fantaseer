@@ -25,8 +25,9 @@ const cards = $derived.by(() => {
     {#snippet badge()}<span class="picked-cycle" aria-hidden="true"></span>{/snippet}
     {#snippet overlay()}<span class="text-9xl  -ml-12  opacity-60 clock-cycle clock-glow" aria-hidden="true"></span>{/snippet}
     {@const picked = pick?.id === card.id}
+    {console.log('Rendering pickable card:', card)}
     <Cardio
-      class={[card.type === 'HERO' ? `[&_img]:-mb-5` : `[&_img]:-mb-9`, picked && 'opacity-90']}
+      class={card.type === 'HERO' ? `[&_img]:-mb-5` : `[&_img]:-mb-9`}
       img={{ src: store.rules.display(card) }}
       badge={picked && badge}
       overlay={picked && overlay}
