@@ -7,7 +7,7 @@ import { error } from '@sveltejs/kit';
 import { hs } from './HS/hs.server';
 
 // Registry stores modules with erased generics for runtime lookup
-export const mapping = new Map<Game.Code, Game.IGame<Game.Code, unknown>>();
+export const mapping = new Map<Game.Code, Game.IGame<Game.Code, any, any>>();
 
 /** Get a game module by Game.Code (throws if not found) */
 export const gg = async <T>(game?: Game.Code | string) => {

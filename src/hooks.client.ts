@@ -7,7 +7,7 @@ import './lib/utilz/logger';
 export const init: ClientInit = async () => {
   try {
     Games();
-    if(import.meta.env.VITE_TARGET === "extension") await Twitch();
+    if(import.meta.env.VITE_TARGET) await Twitch();
   } catch (e) {
     console.warn('Error initializing client:', e);
   }

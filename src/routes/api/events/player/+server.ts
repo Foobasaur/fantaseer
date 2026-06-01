@@ -18,8 +18,8 @@ import type { RequestHandler } from './$types';
 // OnEntityWillTakeDamage
 // OnPlayerDraw
 // OnOpponentPlay
-const PreconditionFailed = (message: string) => error(412, message);
-const PICKAROO_TRIGGERS = new Set(['OnGameStart', 'OnAll8Found']) as ReadonlySet<string>;
+const failed = (message: string) => error(412, message);
+const PICKAROO_TRIGGERS = new Set(['OnGameStart', 'OnLobbyReady']) as ReadonlySet<string>;
 const PICKAROO_RESOLVES = new Map<string, readonly string[]>([['OnPlayerDraw', ['OnGameStart']]]) as ReadonlyMap<
   string,
   readonly string[]
@@ -33,16 +33,14 @@ interface Payload {
 }
 export const POST: RequestHandler = ({ request, url }) =>
   catchy(async () => {
-    const code = request.headers.get('x-game-code') || PreconditionFailed('Missing game-code header');
-    const seed = url.searchParams.get('seed') || PreconditionFailed('Missing seed param');
-    const mode = url.searchParams.get('mode') || PreconditionFailed('Missing mode param');
+    const code = request.headers.get('x-game-code') || failed('Missing game-code header');
+    const seed = url.searchParams.get('seed') || failed('Missing seed param');
+    const mode = url.searchParams.get('mode') || failed('Missing mode param');
     const auth = await authenticate();
     const player = await auth.get();
     const game =
-      (await db.query.games.findFirst({ where: { code }, with: { categories: true } })) ||
-      PreconditionFailed('Game not found');
-    const { id: categoryId } =
-      game.categories.find(c => c.mode === mode) || PreconditionFailed(`Category not found for ${mode}} mode`);
+      (await db.query.games.findFirst({ where: { code }, with: { categories: true } })) || failed('Game not found');
+    const { id: categoryId } = game.categories.find(c => c.mode === mode) || failed(`Category not found for ${mode}} mode`);
 
     const events: DB.Infertable<'Insert'>['events'][] = [];
     const pickaroos: DB.Infertable<'Insert'>['pickaroos'][] = [];
@@ -54,7 +52,7 @@ export const POST: RequestHandler = ({ request, url }) =>
       if (PICKAROO_TRIGGERS.has(eventable)) pickaroos.push({ ...values, pickables });
       for (const pickable of pickables) events.push({ ...values, pickable });
     }
-    if (!events.length && !pickaroos.some(p => p.pickables.length)) PreconditionFailed('No valid events to process');
+    if (!events.length && !pickaroos.some(p => p.pickables.length)) failed('No valid events to process');
     // ... return { ..., dropped }
 
     // Process everything in a transaction, including the post-commit broadcast preparation (chatters, viewers)
@@ -85,7 +83,8 @@ export const POST: RequestHandler = ({ request, url }) =>
       for (const e of [...(inserted || [])].sort((a, b) => a.id - b.id))
         for (const eventable of PICKAROO_RESOLVES.get(e.eventable) || []) {
           const key = `${e.categoryId}:${eventable}`;
-          if (!triggers.has(key) && (e.meta as { turns: number })?.turns > 0) {
+          const turns = (e.meta as { turns: number })?.turns ?? 0;
+          if (!triggers.has(key) && turns > 0 && turns% 3 === 0) {
             triggers.set(key, { categoryId: e.categoryId, eventable, eventId: e.id });
           }
         }
@@ -126,19 +125,19 @@ export const POST: RequestHandler = ({ request, url }) =>
     );
 
     // 6. Broadcast AFTER commit
-    if (resolved) {
+    if (resolved && resolved.length) {
       await PubSubServer.I.broadcast(player.platformId, {
         event: 'pickems:updated',
         payload: resolved
       });
     }
-    if (opened) {
+    if (opened && opened.length) {
       await PubSubServer.I.broadcast(player.platformId, {
         event: 'pickaroos:updated',
         payload: opened
       });
     }
-    if (inserted && inserted.length > 0) {
+    if (inserted && inserted.length) {
       // Observers for chatters
       const chat = await chatters(player.platformId);
       const viewers = chat.length && (await Viewer({ platform: auth.opts.platform, platformIds: chat.map(c => c.user_id) }));

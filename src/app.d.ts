@@ -1,5 +1,6 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
+/// <reference path="../sst-env.d.ts" />
 import type { Server, Twitch } from '@';
 
 declare global {

@@ -6,10 +6,10 @@ import { onMount } from 'svelte';
 import { Twitch } from './services/Extension.svelte';
 
 let viewer = $state<toothy<TT.Viewer>>();
-let isLinked = $state(import.meta.env.VITE_TARGET === 'mock');
+let isLinked = $state(import.meta.env.VITE_TARGET !== 'extension');
 
 const authHander = async () => {
-  if(viewer) return;
+  if (viewer) return;
   isLinked = Twitch.I.viewer.isLinked;
   const helixer = isLinked && (await Twitch.I.Viewer());
   return (viewer =
@@ -29,8 +29,8 @@ export const init = async () => {
     console.log('Twitch Extension Viewer:', Twitch.I.viewer);
     console.log('Twitch Extension User:', Twitch.I.helixer);
     Twitch.I.pubsub?.onBroadcast<DB.FeedEntry<DB.Tablekey>>(async msg => {
-      console.log('Received PubSub broadcast message:', msg);
-      Twitch.I.emit(msg.data.event, {payload: msg.data.payload, values: msg.data.values });
+      console.log('Received PubSub broadcast message:', msg.data);
+      Twitch.I.emit(msg.data.event, { payload: msg.data.payload, values: msg.data.values });
     });
   } catch (e) {
     throw new Error(

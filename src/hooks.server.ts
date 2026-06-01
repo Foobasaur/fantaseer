@@ -1,16 +1,15 @@
-import { init as Games } from '$lib/core/games/games.server';
 import { providers } from '$lib/server/auth';
 import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit';
 
 // const ALLOWED_ORIGIN = ['Access-Control-Allow-Origin', `https://${env.TWITCH_EXTENSION_CLIENT_ID}.ext-twitch.tv`];
 export const init: ServerInit = async () => {
-  if (process.env.VITE_TARGET !== 'extension') await Games();
+  if (process.env.VITE_TARGET !== 'extension') await import('$lib/core/games/games.server').then(async m => await m.init());
 };
 
 export const handle: Handle = async ({ event, resolve }) => {
   const jwt = event.request.headers.get('x-ext-auth-jwt');
   const mode = event.request.headers.get('x-ext-ctx-mode');
-  event.locals.user = (await providers.twitch.resolve(jwt, mode));
+  event.locals.user = await providers.twitch.resolve(jwt, mode);
   return resolve(event);
 };
 

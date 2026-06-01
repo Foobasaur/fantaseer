@@ -12,10 +12,9 @@ const summary = $derived.by(() => ({
     { title: 'Ratings', value: totals?.fantasy.eventables.reduce((n, e) => n + e.events, 0) }
   ],
   pickaroo: [
-    { title: 'Open', value: totals?.pickaroo?.open },
-    { title: 'Live', value: totals && totals.pickems.attempts - (totals.pickems.hits + totals.pickems.misses) },
     { title: 'Hits', value: totals?.pickems.hits },
-    { title: 'Misses', value: totals?.pickems.misses }
+    { title: 'Misses', value: totals?.pickems.misses },
+    { title: 'Open', value: totals?.pickaroo?.open },
   ],
   scores: [
     { title: 'Fantasy', value: totals?.fantasy.picks },

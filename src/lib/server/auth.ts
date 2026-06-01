@@ -34,7 +34,7 @@ export const providers = {
         const [authenticated] = identity.length ? identity : await Viewer<Twitch.Viewer>(opts);
         return { authenticated, jwt }; // ✅ wrap only the identity case
       } catch (err) {
-        if (process.env.VITE_TARGET !== 'mock') {
+        if (process.env.VITE_TARGET === 'extension') {
           console.warn('Auth provider error:', err);
           return jwt && { anonymous: {}, jwt };
         } else

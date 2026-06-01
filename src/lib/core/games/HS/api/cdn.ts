@@ -1,8 +1,8 @@
 // Hearthstone json API client with CDN URL construction
 import { cached } from '$lib/utilz/fscache';
 import type { Card, ICard, ImgResolution } from '../types';
-import { CardType, FormatType, GameTag, GameType } from './enums';
-import { hasInts, parse, type CardDefs } from './xdefs';
+import { FormatType, GameTag, GameType } from './enums';
+import { parse } from './xdefs';
 
 const art = (id: string, url = 'https://art.hearthstonejson.com/v1') => {
   const resolutions = ['256x', '512x', 'orig'];

@@ -37,16 +37,20 @@ const currentPickable = $derived(
   : pickaroo?.pickables.find(p => p?.id === pickem?.pickable)
 );
 
-const stated = ({ attempts = 0, hits = 0, misses = 0 } = {}) =>
+const stated = ({ attempts = -1, hits = -1, misses = -1 }) =>
   [
-    { title: 'Attempts', value: attempts, icon: '🎲', varient: 'text-primary' },
     { title: 'Misses', value: misses, icon: '💨', varient: 'text-base-content' },
-    { title: 'Hits', value: hits, icon: '🎰', varient: 'text-success' }
-  ] as Stat[];
+    { title: 'Hits', value: hits, icon: '🎰', varient: 'text-success' },
+    { title: 'Attempts', value: attempts, icon: '🎲', varient: 'text-primary' }
+  ].filter(s => s.value > -1) as Stat[];
 
-usePubSub<'pickaroos' | 'pickems'>({
+usePubSub({
   'pickaroos:updated': () => invalidate(data.dependz),
   'pickems:updated': () => {
+    optimisticPick = null;
+    invalidate(data.dependz);
+  },
+  'events:created': () => {
     optimisticPick = null;
     invalidate(data.dependz);
   }
@@ -57,7 +61,7 @@ usePubSub<'pickaroos' | 'pickems'>({
 
 <div class="page-content">
   {#if !category && totals.length}
-    <Stats stats={stated(totals.find(hasnot('category'))?.pickems)} />
+    <Stats stats={stated(totals.find(hasnot('category'))?.pickems || { attempts: 0, hits: 0, misses: 0 })} />
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each totals.filter(has('category')) as { pickems, category } (category.id)}
@@ -68,9 +72,9 @@ usePubSub<'pickaroos' | 'pickems'>({
             mode: category.mode
           })}>
           <div class="divider my-0"></div>
-          <Stats class={'rounded-b-none'} stats={stated({ attempts: pickems.attempts })} />
-          <hr class="-my-2 border-t border-dashed border-base-content/20" />
-          <Stats class={'rounded-t-none'} stats={stated({ hits: pickems.hits, misses: pickems.misses })} />
+          <Stats
+            class={'rounded-t-none'}
+            stats={stated({ hits: pickems.hits, misses: pickems.misses, attempts: pickems.attempts })} />
         </Categorically>
       {:else}{/each}
     </div>

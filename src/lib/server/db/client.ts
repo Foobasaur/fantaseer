@@ -1,6 +1,6 @@
+import { Resource } from 'sst';
 import { defineRelations } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { Resource } from 'sst';
 import * as tables from './.sql/tables';
 
 export const tablez = { ...tables } as const;
