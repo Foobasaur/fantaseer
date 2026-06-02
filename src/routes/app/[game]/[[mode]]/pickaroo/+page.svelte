@@ -49,10 +49,6 @@ usePubSub({
   'pickems:updated': () => {
     optimisticPick = null;
     invalidate(data.dependz);
-  },
-  'events:created': () => {
-    optimisticPick = null;
-    invalidate(data.dependz);
   }
 });
 </script>

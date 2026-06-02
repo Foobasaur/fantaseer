@@ -28,10 +28,14 @@ export const init = async () => {
     console.log('Twitch Extension Context:', Twitch.I.ctx);
     console.log('Twitch Extension Viewer:', Twitch.I.viewer);
     console.log('Twitch Extension User:', Twitch.I.helixer);
-    Twitch.I.pubsub?.onBroadcast<DB.FeedEntry<DB.Tablekey>>(async msg => {
-      console.log('Received PubSub broadcast message:', msg.data);
-      Twitch.I.emit(msg.data.event, { payload: msg.data.payload, values: msg.data.values });
-    });
+    Twitch.I.pubsub?.onBroadcast<DB.FeedEntry<DB.Tablekey> | { events: Array<DB.TEventKey<DB.Tablekey>>; payload?: any }>(
+      async msg => {
+        console.log('Received PubSub broadcast message:', msg.data);
+        if (!msg.data) return;
+        if (msg.data && 'events' in msg.data) msg.data.events.forEach(e => Twitch.I.emit(e, { payload: msg.data?.payload }));
+        else Twitch.I.emit(msg.data.event, { payload: msg.data.payload, values: msg.data.values });
+      }
+    );
   } catch (e) {
     throw new Error(
       'Error waiting for Twirch ext client helper initialization: ' + (e instanceof Error ? e.message : String(e))

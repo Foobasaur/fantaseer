@@ -150,7 +150,7 @@ export namespace DB {
    * Discriminated union: each entry correlates event key with its payload type
    * */
   type FeedEntry<O extends Tablekey> = {
-    [K in keyof TMultiEvent<O>]: {
+    [K in keyof TMultiEvent<O>]?: {
       event: K;
       values?: TMultiEvent<O>[K];
       payload?: any; // For compatibility with generic event handlers; can be typed more strictly if needed

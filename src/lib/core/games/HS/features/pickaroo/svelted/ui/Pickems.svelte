@@ -31,8 +31,8 @@ const cards = $derived.by(() => {
       img={{ src: store.rules.display(card) }}
       badge={picked && badge}
       overlay={picked && overlay}
-      disabled={pick !== null}
-      onclick={() => props.submit(card)} />
+      disabled={pick != null && pick.id !== card.id}
+      onclick={() => !pick && props.submit(card)} />
   {/each}
 </div>
 

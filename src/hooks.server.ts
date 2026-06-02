@@ -1,9 +1,10 @@
+import { init as Games } from '$lib/core/games/games.server';
 import { providers } from '$lib/server/auth';
 import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit';
 
 // const ALLOWED_ORIGIN = ['Access-Control-Allow-Origin', `https://${env.TWITCH_EXTENSION_CLIENT_ID}.ext-twitch.tv`];
 export const init: ServerInit = async () => {
-  if (process.env.VITE_TARGET !== 'extension') await import('$lib/core/games/games.server').then(async m => await m.init());
+  if (process.env.VITE_TARGET !== 'extension') await Games();
 };
 
 export const handle: Handle = async ({ event, resolve }) => {

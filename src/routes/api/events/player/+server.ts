@@ -4,7 +4,7 @@ import { Viewer } from '$lib/server/db/queries/identity';
 import { chatters } from '$lib/server/twitch/api';
 import { authenticate } from '$lib/server/twitch/auth';
 import { PubSubServer } from '$lib/server/twitch/PubSubServer';
-import { catchy } from '$lib/utilz/polly';
+import { catchy, delay } from '$lib/utilz/polly';
 import type { DB } from '@';
 import { error } from '@sveltejs/kit';
 import { sql } from 'drizzle-orm';
@@ -19,11 +19,11 @@ import type { RequestHandler } from './$types';
 // OnPlayerDraw
 // OnOpponentPlay
 const failed = (message: string) => error(412, message);
-const PICKAROO_TRIGGERS = new Set(['OnGameStart', 'OnLobbyReady']) as ReadonlySet<string>;
-const PICKAROO_RESOLVES = new Map<string, readonly string[]>([['OnPlayerDraw', ['OnGameStart']]]) as ReadonlyMap<
-  string,
-  readonly string[]
->;
+const PICKAROO_TRIGGERS = new Set(['OnGameStart', 'OnLobbyReady', 'OnTurnStart']) as ReadonlySet<string>;
+const PICKAROO_RESOLVES = new Map<string, readonly string[]>([
+  ['OnPlayerDraw', ['OnGameStart', 'OnTurnStart']],
+  ['OnRoundPlacement', ['OnLobbyReady', 'OnTurnStart']]
+]) as ReadonlyMap<string, readonly string[]>;
 
 interface Payload {
   mode: string;
@@ -34,7 +34,6 @@ interface Payload {
 export const POST: RequestHandler = ({ request, url }) =>
   catchy(async () => {
     const code = request.headers.get('x-game-code') || failed('Missing game-code header');
-    const seed = url.searchParams.get('seed') || failed('Missing seed param');
     const mode = url.searchParams.get('mode') || failed('Missing mode param');
     const auth = await authenticate();
     const player = await auth.get();
@@ -46,23 +45,31 @@ export const POST: RequestHandler = ({ request, url }) =>
     const pickaroos: DB.Infertable<'Insert'>['pickaroos'][] = [];
     const payload = (await request.json()) as Payload[];
     for (const { eventable, pickables, meta } of payload) {
-      const values = { categoryId, playerId: player.id, eventable, meta: { ...meta, seed } };
+      const values = { categoryId, playerId: player.id, eventable, meta };
       console.log('Processing event:', inspect({ values, pickables }, { depth: null, colors: true }));
 
       if (PICKAROO_TRIGGERS.has(eventable)) pickaroos.push({ ...values, pickables });
-      for (const pickable of pickables) events.push({ ...values, pickable });
+      else for (const pickable of pickables) events.push({ ...values, pickable });
     }
     if (!events.length && !pickaroos.some(p => p.pickables.length)) failed('No valid events to process');
     // ... return { ..., dropped }
 
     // Process everything in a transaction, including the post-commit broadcast preparation (chatters, viewers)
-    const { opened, inserted, resolved } = await db.transaction(async tx => {
+    const { opened, inserted, pickems } = await db.transaction(async tx => {
       // 1. Upsert pickaroo opens (append-unique pickables)
       const opened =
         pickaroos.length &&
         (await tx
           .insert(tablez.pickaroos)
-          .values(pickaroos)
+          .values(
+            Array.from(
+              Map.groupBy(pickaroos, p => `${p.categoryId}\u0000${p.playerId}\u0000${p.eventable}`).values(),
+              group => ({
+                ...group.at(-1)!, // representative row
+                pickables: [...new Set(group.flatMap(p => p.pickables))]
+              })
+            )
+          )
           .onConflictDoUpdate({
             target: [tablez.pickaroos.categoryId, tablez.pickaroos.playerId, tablez.pickaroos.eventable],
             targetWhere: sql`${tablez.pickaroos.outcomeId} IS NULL`,
@@ -83,9 +90,16 @@ export const POST: RequestHandler = ({ request, url }) =>
       for (const e of [...(inserted || [])].sort((a, b) => a.id - b.id))
         for (const eventable of PICKAROO_RESOLVES.get(e.eventable) || []) {
           const key = `${e.categoryId}:${eventable}`;
-          const turns = (e.meta as { turns: number })?.turns ?? 0;
-          if (!triggers.has(key) && turns > 0 && turns% 3 === 0) {
-            triggers.set(key, { categoryId: e.categoryId, eventable, eventId: e.id });
+          if (triggers.has(key)) continue;
+          else {
+            console.log('Evaluating trigger for pickaroo:', { key, ...e });
+            const { turns = 0, place = 1 } = e.meta as { turns?: number; place?: number };
+            // trigger on non-milestone turn (>1, not %3) or 1st place
+            if (turns < 3 || place !== 1) continue;
+            else if (turns % 3 === 0 || eventable === 'OnRoundPlacement') {
+              const value = { categoryId: e.categoryId, eventable, eventId: e.id };
+              triggers.set(key, value);
+            }
           }
         }
 
@@ -113,30 +127,16 @@ export const POST: RequestHandler = ({ request, url }) =>
               JOIN player_event e ON r."outcomeId" = e.id
             `)
         );
-      return { opened, inserted, resolved };
+      return { opened, inserted, pickems: { resolved, triggers: [...triggers] } };
     });
-    console.log(
-      'Transaction complete. Opened pickaroos:',
-      opened,
-      'Inserted events:',
-      inserted,
-      'Resolved pickems:',
-      resolved
-    );
 
-    // 6. Broadcast AFTER commit
-    if (resolved && resolved.length) {
-      await PubSubServer.I.broadcast(player.platformId, {
-        event: 'pickems:updated',
-        payload: resolved
-      });
-    }
-    if (opened && opened.length) {
-      await PubSubServer.I.broadcast(player.platformId, {
-        event: 'pickaroos:updated',
-        payload: opened
-      });
-    }
+    const evented = {
+      ...(opened && opened.length && { 'pickaroos:updated': opened }),
+      ...(pickems.triggers.length && { 'pickems:updated': pickems }),
+      ...(inserted && inserted.length && { 'events:created': inserted })
+    };
+    console.log('Evented:', inspect({ evented }, { depth: null, colors: true }));
+
     if (inserted && inserted.length) {
       // Observers for chatters
       const chat = await chatters(player.platformId);
@@ -145,13 +145,8 @@ export const POST: RequestHandler = ({ request, url }) =>
         viewers &&
         viewers.length &&
         (await $insert('observers')(viewers.flatMap(v => inserted.map(i => ({ eventId: i.id, viewerId: v.id })))));
-
-      await PubSubServer.I.broadcast(player.platformId, {
-        event: 'events:created',
-        payload: inserted
-      });
-      return { resolved, opened, inserted, chat, viewers, observed };
     }
 
-    return { resolved, opened };
+    await PubSubServer.I.broadcast(player.platformId, { events: Object.keys(evented) });
+    return evented;
   });

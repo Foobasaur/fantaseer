@@ -14,7 +14,7 @@
     "db:push": "drizzle-kit push",
     "db:export": "drizzle-kit export --config=drizzle.local.ts",
     "db:generate": "drizzle-kit generate --config=drizzle.local.ts",
-    "db:generate:seed:hs": "drizzle-kit generate --config=drizzle.local.ts --custom --name=seed-hs",
+    "db:generate:seed": "drizzle-kit generate --config=drizzle.local.ts --custom --name=seed",
     "db:migrate": "drizzle-kit migrate --config=drizzle.local.ts",
     "db:studio": "drizzle-kit studio --config=drizzle.local.ts",
     "db": "sst shell drizzle-kit",
@@ -25,8 +25,7 @@
     "db:pull": "sst shell drizzle-kit pull",
     "dev": "node --inspect=9229 node_modules/.bin/vite dev",
     "dev:bang": "DATABASE_URL=postgres://root:mysecretpassword@localhost:5433/local VITE_TARGET=mock vite dev",
-    "dev:ext": "VITE_TARGET=extension sst dev",
-    "dev:test": "SST_DEBUG=true npx sst deploy --stage test",
+    "dev:pre": "SST_DEBUG=true npx sst deploy --stage pre",
     "prepare": "svelte-kit sync || echo ''",
     "preview": "vite preview",
     "test:seed": "SKIP_SETUP=1 vitest run tests/seed/all"

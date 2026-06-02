@@ -21,11 +21,10 @@
 //   await pub.global({ type: 'announcement', text: 'Maintenance in 5m' });
 // ============================================
 
-import type { DB, Twitch } from '@';
 import { env } from '$env/dynamic/private';
-import { createHmac } from 'node:crypto';
+import type { DB, Twitch } from '@';
 import { error } from '@sveltejs/kit';
-import { delay } from '$lib/utilz/polly';
+import { createHmac } from 'node:crypto';
 
 const TWITCH_PUBSUB_URL = 'https://api.twitch.tv/helix/extensions/pubsub';
 const DEFAULT_TOKEN_TTL_SECONDS = 60;
@@ -101,7 +100,6 @@ export class PubSubServer {
    * Send a PubSub message via the Twitch API.
    */
   private send = async (targret: Twitch.PubSub.Target, broadcasterId: string, msg: unknown, global = false) => {
-    await delay(600); // Prevent hitting rate limits in quick succession
     const body: SendRequest = {
       target: global ? ['global'] : [targret],
       broadcaster_id: broadcasterId,
