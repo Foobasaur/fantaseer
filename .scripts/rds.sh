@@ -173,6 +173,8 @@ if [[ "$choice" =~ ^[Yy]$ ]]; then
     "ec2-user@${NAT_IP}" \
     -i "$KEY_PATH" \
     -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    -o LogLevel=ERROR \
     -o ServerAliveInterval=60 \
     -o ExitOnForwardFailure=yes \
     -N

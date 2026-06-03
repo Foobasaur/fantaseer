@@ -19,7 +19,7 @@ export const providers = {
                 .digest('base64url')
             )
           ) &&
-          (JSON.parse(Buffer.from(body, 'base64url').toString())))(token!.split('.'));
+          JSON.parse(Buffer.from(body, 'base64url').toString()))(token!.split('.'));
         if (!jwt || !jwt.user_id || jwt.user_id.startsWith('A')) error(401, 'Invalid JWT');
         const opts = { platform: 'twitch', platformId: jwt.user_id };
         const player = jwt.role === 'broadcaster' && mode === 'config';
@@ -27,7 +27,7 @@ export const providers = {
         const [authenticated] = identity.length ? identity : await Viewer<Twitch.Viewer>(opts);
         return { authenticated, jwt }; // ✅ wrap only the identity case
       } catch (err) {
-        if (process.env.VITE_TARGET !== 'mock') {
+        if (process.env.VITE_TARGET === 'extension') {
           console.warn('Auth provider error:', err);
           return jwt && { anonymous: {}, jwt };
         } else
@@ -44,7 +44,7 @@ export const providers = {
                 listen: ['broadcast', 'whisper-UZz3YwoOd_efdBnxftIxN', 'global']
               }
             } as Twitch.Ext.JWTPayload
-          }))((await Viewer<Twitch.Viewer>({ id: 7 }))[0]);
+          }))((await Viewer<Twitch.Viewer>({ id: process.env.VITE_TARGET === 'mock' ? 7 : 1 }))[0]);
       }
     }
   } satisfies Server.Auth.IAuthProvider<Twitch.Viewer | Twitch.Player, Twitch.Ext.JWTPayload>

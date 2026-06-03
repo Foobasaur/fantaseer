@@ -4,7 +4,7 @@ import { Viewer } from '$lib/server/db/queries/identity';
 import { chatters } from '$lib/server/twitch/api';
 import { authenticate } from '$lib/server/twitch/auth';
 import { PubSubServer } from '$lib/server/twitch/PubSubServer';
-import { catchy, delay } from '$lib/utilz/polly';
+import { catchy } from '$lib/utilz/polly';
 import type { DB } from '@';
 import { error } from '@sveltejs/kit';
 import { sql } from 'drizzle-orm';
@@ -18,7 +18,6 @@ import type { RequestHandler } from './$types';
 // OnEntityWillTakeDamage
 // OnPlayerDraw
 // OnOpponentPlay
-const failed = (message: string) => error(412, message);
 const PICKAROO_TRIGGERS = new Set(['OnGameStart', 'OnLobbyReady', 'OnTurnStart']) as ReadonlySet<string>;
 const PICKAROO_RESOLVES = new Map<string, readonly string[]>([
   ['OnPlayerDraw', ['OnGameStart', 'OnTurnStart']],
@@ -33,29 +32,27 @@ interface Payload {
 }
 export const POST: RequestHandler = ({ request, url }) =>
   catchy(async () => {
-    const code = request.headers.get('x-game-code') || failed('Missing game-code header');
-    const mode = url.searchParams.get('mode') || failed('Missing mode param');
-    const auth = await authenticate();
-    const player = await auth.get();
+    const faulted = (message: string) => error(412, message);
+    const code = request.headers.get('x-game-code') || faulted('Missing game-code header');
+    const mode = url.searchParams.get('mode') || faulted('Missing mode param');
+    const player = await (auth => auth.get())(await authenticate());
     const game =
-      (await db.query.games.findFirst({ where: { code }, with: { categories: true } })) || failed('Game not found');
-    const { id: categoryId } = game.categories.find(c => c.mode === mode) || failed(`Category not found for ${mode}} mode`);
+      (await db.query.games.findFirst({ where: { code }, with: { categories: true } })) || faulted('Game not found');
+    const { id: categoryId } = game.categories.find(c => c.mode === mode) || faulted(`Category not found for ${mode}} mode`);
 
     const events: DB.Infertable<'Insert'>['events'][] = [];
     const pickaroos: DB.Infertable<'Insert'>['pickaroos'][] = [];
     const payload = (await request.json()) as Payload[];
+    console.log('Processing:', inspect({ payload }, { depth: null, colors: true }));
     for (const { eventable, pickables, meta } of payload) {
       const values = { categoryId, playerId: player.id, eventable, meta };
-      console.log('Processing event:', inspect({ values, pickables }, { depth: null, colors: true }));
-
       if (PICKAROO_TRIGGERS.has(eventable)) pickaroos.push({ ...values, pickables });
       else for (const pickable of pickables) events.push({ ...values, pickable });
     }
-    if (!events.length && !pickaroos.some(p => p.pickables.length)) failed('No valid events to process');
-    // ... return { ..., dropped }
+    if (!events.length && !pickaroos.some(p => p.pickables.length)) faulted('No valid events to process');
 
     // Process everything in a transaction, including the post-commit broadcast preparation (chatters, viewers)
-    const { opened, inserted, pickems } = await db.transaction(async tx => {
+    const x = await db.transaction(async tx => {
       // 1. Upsert pickaroo opens (append-unique pickables)
       const opened =
         pickaroos.length &&
@@ -66,7 +63,7 @@ export const POST: RequestHandler = ({ request, url }) =>
               Map.groupBy(pickaroos, p => `${p.categoryId}\u0000${p.playerId}\u0000${p.eventable}`).values(),
               group => ({
                 ...group.at(-1)!, // representative row
-                pickables: [...new Set(group.flatMap(p => p.pickables))]
+                pickables: [...new Set(group.flatMap(p => p.pickables.map(p => p.replace(/(_\d+)\D.*$/, '$1'))))]
               })
             )
           )
@@ -86,25 +83,31 @@ export const POST: RequestHandler = ({ request, url }) =>
       const inserted = events.length && (await tx.insert(tablez.events).values(events).returning());
 
       // 3. First trigger per (category, pickaroo eventable) — lowest id wins
-      const triggers = new Map<string, { categoryId: number; eventable: string; eventId: number }>();
-      for (const e of [...(inserted || [])].sort((a, b) => a.id - b.id))
-        for (const eventable of PICKAROO_RESOLVES.get(e.eventable) || []) {
-          const key = `${e.categoryId}:${eventable}`;
-          if (triggers.has(key)) continue;
-          else {
-            console.log('Evaluating trigger for pickaroo:', { key, ...e });
-            const { turns = 0, place = 1 } = e.meta as { turns?: number; place?: number };
-            // trigger on non-milestone turn (>1, not %3) or 1st place
-            if (turns < 3 || place !== 1) continue;
-            else if (turns % 3 === 0 || eventable === 'OnRoundPlacement') {
-              const value = { categoryId: e.categoryId, eventable, eventId: e.id };
-              triggers.set(key, value);
+      const triggers =
+        inserted &&
+        inserted.length &&
+        (() => {
+          const map = new Map<string, { categoryId: number; eventable: string; eventId: number }>();
+          for (const event of [...inserted].filter(e => e.meta).sort((a, b) => a.id - b.id))
+            for (const eventable of PICKAROO_RESOLVES.get(event.eventable) || []) {
+              const key = `${event.categoryId}:${eventable}`;
+              if (map.has(key)) continue;
+              else {
+                const { turns = 0, place = 1 } = event.meta as { turns?: number; place?: number };
+                // trigger on non-milestone turn (>1, not %3) or 1st place
+                if (turns < 3 || place > 4) continue;
+                else if (turns % 3 === 0 || event.eventable === 'OnRoundPlacement') {
+                  const value = { categoryId: event.categoryId, eventable, eventId: event.id };
+                  map.set(key, value);
+                }
+              }
             }
-          }
-        }
+          return map;
+        })();
 
       // 4. Resolve open pickaroos + return affected pickems for broadcast
       const resolved =
+        triggers &&
         triggers.size &&
         (r => r.rows as (DB.Infertable['pickems'] & { eventable: string; eventPickable: string })[])(
           await tx.execute(sql`
@@ -127,26 +130,29 @@ export const POST: RequestHandler = ({ request, url }) =>
               JOIN player_event e ON r."outcomeId" = e.id
             `)
         );
-      return { opened, inserted, pickems: { resolved, triggers: [...triggers] } };
+      return {
+        opened,
+        pickems: { resolved, triggers: triggers && [...triggers] },
+        ...(inserted && inserted.length ? { inserted } : { inserted: null })
+      };
     });
 
-    const evented = {
-      ...(opened && opened.length && { 'pickaroos:updated': opened }),
-      ...(pickems.triggers.length && { 'pickems:updated': pickems }),
-      ...(inserted && inserted.length && { 'events:created': inserted })
+    const evented: { [K in keyof DB.TEvent<DB.Tablekey>]?: DB.TEvent<DB.Tablekey>[K] | any } = {
+      ...(x.opened && x.opened.length && { 'pickaroos:updated': x.opened }),
+      ...(x.inserted && x.inserted.length && { 'events:created': x.inserted }),
+      ...(x.pickems.triggers && x.pickems.triggers.length && { 'pickems:updated': x.pickems })
     };
-    console.log('Evented:', inspect({ evented }, { depth: null, colors: true }));
-
-    if (inserted && inserted.length) {
+    if (x.inserted?.length) {
       // Observers for chatters
       const chat = await chatters(player.platformId);
-      const viewers = chat.length && (await Viewer({ platform: auth.opts.platform, platformIds: chat.map(c => c.user_id) }));
-      const observed =
+      const viewers = chat.length && (await Viewer({ platform: player.platform, platformIds: chat.map(c => c.user_id) }));
+      const observers =
         viewers &&
         viewers.length &&
-        (await $insert('observers')(viewers.flatMap(v => inserted.map(i => ({ eventId: i.id, viewerId: v.id })))));
+        (await $insert('observers')(viewers.flatMap(v => x.inserted.map(i => ({ eventId: i.id, viewerId: v.id })))));
+      if (observers && observers.length) evented['observers:created'] = observers;
     }
-
-    await PubSubServer.I.broadcast(player.platformId, { events: Object.keys(evented) });
-    return evented;
+    console.log('Evented:', inspect({ evented }, { depth: null, colors: true }));
+    return await PubSubServer.I.broadcast(player.platformId, { events: Object.keys(evented) });
+    // return evented;
   });

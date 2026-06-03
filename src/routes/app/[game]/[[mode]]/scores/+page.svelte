@@ -50,7 +50,7 @@ const format = (score: number) => (score >= 1000 ? (score / 1000).toFixed(1) + '
         : entry.rank === 3 ? 'text-7xl w-16 ring-warning'
         : 'text-5xl w-8'
       ]}>
-      {#if entry.avatar && !eqludes(entry.avatar, 'user-default-pictures')}<img src={entry.avatar} alt={entry.username} />
+      {#if false && entry.avatar && !eqludes(entry.avatar, 'user-default-pictures')}<img src={entry.avatar} alt={entry.username} />
       {:else}<span>{emojiFace[entry.viewerId % emojiFace.length]}</span>{/if}
     </div>
   </div>
