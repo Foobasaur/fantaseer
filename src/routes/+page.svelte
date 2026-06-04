@@ -1,6 +1,9 @@
 <script lang="ts">
 import { onMount } from 'svelte';
 import banner from '$lib/assets/fantaseer_banner.png';
+import fantasy from '$lib/assets/fantasy.png';
+import pickaroo from '$lib/assets/pickaroo.png';
+import scores from '$lib/assets/scoring.png';
 
 const GITHUB = 'https://github.com/Foobasaur';
 const TWITCH = 'https://dashboard.twitch.tv/extensions/jlhgspyu42o9po12ppumnwv9xy38nn-0.0.1';
@@ -8,25 +11,27 @@ const TWITCH = 'https://dashboard.twitch.tv/extensions/jlhgspyu42o9po12ppumnwv9x
 const features = [
   {
     icon: '✨',
+    img: fantasy,
     name: 'Fantasy',
     tagline: "Draft 'em",
     desc: 'Viewers draft lineups of game elements characters. Streamers engagements reward picks that show up in play.'
   },
   {
     icon: '⚡',
+    img: pickaroo,
     name: 'Pickaroo',
     tagline: "Pick 'em",
     desc: "Live pick'ems on what happens next. Hit the call, collect the points."
   },
   {
     icon: '🏆',
+    img: scores,
     name: 'Scores',
     tagline: "Beatem 'em",
     desc: "Leaderboards roll fantasy engagement and pick'em points into one ranking."
   }
 ];
-
-let canvas: HTMLCanvasElement;
+let active = $state<(typeof features)[number] | null>(null);
 
 const EMOJIS = ['⚡', '✨', '👻', '👽', '💀', '🪙', '🎴', '🕹️', '🃏', '🌟', '🔮', '🎲'];
 const SPRITE_PX = 96; // logical sprite box; baked-in glow has room here
@@ -74,6 +79,7 @@ const seed = (w: number, h: number, n: number, sprites: HTMLCanvasElement[]): Mo
     sprite: sprites[Math.floor(Math.random() * sprites.length)]
   }));
 
+let canvas: HTMLCanvasElement;
 onMount(() => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -142,7 +148,22 @@ onMount(() => {
   <title>fantaseer</title>
   <meta name="description" content="fantasy game drafts and pick'ems, built for Twitch streamers." />
 </svelte:head>
-
+<svelte:window
+  onkeydown={e => {
+    if (e.key === 'Escape') active = null;
+  }} />
+{#if active}
+  <div
+    role="button"
+    tabindex="-1"
+    onclick={() => (active = null)}
+    onkeydown={e => {
+      if (e.key === 'Escape') active = null;
+    }}
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm">
+    <img src={active.img} alt={active.name} class="max-h-[85vh] max-w-5xl rounded-2xl shadow-2xl ring-1 ring-purple-400/30" />
+  </div>
+{/if}
 <main class="relative min-h-screen overflow-hidden bg-[#0c0418] text-white">
   <canvas bind:this={canvas} aria-hidden="true" class="pointer-events-none fixed inset-0 z-0"></canvas>
 
@@ -191,7 +212,12 @@ onMount(() => {
   <section class="relative z-10 mx-auto mt-20 grid max-w-5xl gap-4 px-6 pb-20 sm:grid-cols-3">
     {#each features as f (f.name)}
       <article
-        class="group rounded-2xl border border-white/10 bg-white/4 p-6 backdrop-blur transition hover:-translate-y-1 hover:border-purple-400/40 hover:bg-white/[0.07]">
+        class="group relative rounded-2xl border border-white/10 bg-white/4 p-6 backdrop-blur transition hover:-translate-y-1 hover:border-purple-400/40 hover:bg-white/[0.07]">
+        <button
+          type="button"
+          onclick={() => (active = f)}
+          aria-label={`Preview ${f.name}`}
+          class="absolute inset-0 z-10 cursor-pointer rounded-2xl"></button>
         <div class="flex items-center gap-3">
           <span class="text-3xl drop-shadow-[0_0_12px_rgba(250,204,21,0.45)]">{f.icon}</span>
           <div>
