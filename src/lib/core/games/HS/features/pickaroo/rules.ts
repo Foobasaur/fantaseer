@@ -19,9 +19,7 @@ const basic: Rules = {
 const bg: Rules = {
   modes: ['Battlegrounds'],
   display(card) {
-    const src = card.type === 'HERO' ? card.img.hero['256x'] : card.img.render['256x'].replace('/render/', '/bgs/');
-    console.log(src)
-    return src;
+    return card.type === 'HERO' ? card.img.hero['256x'] : card.img.render['256x'].replace('/render/', '/bgs/');
   }
 };
 

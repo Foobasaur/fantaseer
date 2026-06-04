@@ -68,10 +68,11 @@ export class PubSubClient {
   subscribe = <T = unknown>(target: Twitch.PubSub.Target, handler: (msg: Message<T>) => void) => {
     if (this.listeners.has(target)) this.unsubscribe(target);
 
-    const callback: ListenerCallback = (t, contentType, raw) => {
+    const callback: ListenerCallback = (target, contentType, raw) => {
       try {
         const data = JSON.parse(raw) as T;
-        const msg: Message<T> = { target: t, contentType, data, raw };
+        const msg: Message<T> = { target, contentType, data, raw };
+        console.log('Received PubSub broadcast message:', msg);
         handler(msg);
         this.config?.onMessage?.(msg as Message);
       } catch (err) {

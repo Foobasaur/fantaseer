@@ -35,7 +35,7 @@ export default async function ({
     )
   );
 
-  const [underground, standard, wild] = await Promise.all(
+  const [Arena, Standard, Wild] = await Promise.all(
     [legal.arena, legal.standard, legal.wild].map(url =>
       cached(new URL(url).searchParams.get('game_type')! + new URL(url).searchParams.get('format_type'), async () => {
         const res = await fetch(url, { headers: { 'User-Agent': 'HDTPortable/1.0 (Unknown)' } });
@@ -44,7 +44,7 @@ export default async function ({
     )
   );
 
-  const battlegrounds =
+  const Battlegrounds =
     ['mock', 'extension'].includes(import.meta.env.VITE_TARGET) ?
       await cached('battlegrounds', async () => {
         const res = await fetch(xdefs);
@@ -62,5 +62,5 @@ export default async function ({
     return acc;
   }, [] as Card[]);
 
-  return { cards, battlegrounds, underground, standard, wild };
+  return { cards, Battlegrounds, Arena, Standard, Wild };
 }

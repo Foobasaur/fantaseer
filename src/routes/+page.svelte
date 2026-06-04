@@ -2,8 +2,8 @@
 import { onMount } from 'svelte';
 import banner from '$lib/assets/fantaseer_banner.png';
 
-const TWITCH = 'https://dashboard.twitch.tv/extensions/jlhgspyu42o9po12ppumnwv9xy38nn-0.0.1';
 const GITHUB = 'https://github.com/Foobasaur';
+const TWITCH = 'https://dashboard.twitch.tv/extensions/jlhgspyu42o9po12ppumnwv9xy38nn-0.0.1';
 
 const features = [
   {

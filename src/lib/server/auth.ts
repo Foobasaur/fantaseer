@@ -31,8 +31,8 @@ export const providers = {
           console.warn('Auth provider error:', err);
           return jwt && { anonymous: {}, jwt };
         } else
-          return (mock => ({
-            authenticated: mock,
+          return (authenticated => ({
+            authenticated,
             jwt: {
               exp: 1778048730,
               opaque_user_id: 'UZz3YwoOd_efdBnxftIxN',
@@ -40,9 +40,7 @@ export const providers = {
               channel_id: '1480939574',
               role: 'viewer',
               is_unlinked: false,
-              pubsub_perms: {
-                listen: ['broadcast', 'whisper-UZz3YwoOd_efdBnxftIxN', 'global']
-              }
+              pubsub_perms: { listen: ['broadcast', 'whisper-UZz3YwoOd_efdBnxftIxN', 'global'] }
             } as Twitch.Ext.JWTPayload
           }))((await Viewer<Twitch.Viewer>({ id: process.env.VITE_TARGET === 'mock' ? 7 : 1 }))[0]);
       }

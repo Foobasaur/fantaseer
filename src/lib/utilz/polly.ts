@@ -14,11 +14,10 @@ export const withTimeout = async <T extends readonly unknown[] | []>(
   return Promise.race([combined, new Promise<never>((_, reject) => setTimeout(() => reject(error), timeout))]) as Promise<T>;
 };
 export const waitFor = async (conition: () => boolean, { timeout = 10, step = 100 } = {}) => {
-  while (!conition()) {
+  while (!conition() && timeout--) {
     await delay(step);
-    if (timeout-- <= 0) throw new Error('timed out waiting for objects');
   }
-  return conition();
+  return timeout && conition() || Promise.reject(new Error('waitFor: condition not met in time'));
 };
 export const roundRobin =
   <T>(items: T[]) =>

@@ -8,6 +8,7 @@ import { db, tablez } from './db/client';
 import { $delete, $get, $insert, $update } from './db/kit';
 import { $Viewer, Player } from './db/queries/identity';
 import { scores } from './db/queries/summary';
+import { event } from 'sst/event';
 
 const req = () => {
   const event = getRequestEvent();
@@ -67,7 +68,7 @@ export const game = async () => {
       );
       return { ...s, score: { engagement, pickems, weighted: engagement + pickems } };
     })
-  }))(player && (await scores(categories)));
+  }))(player && (await scores(categories, import.meta.env.VITE_TARGET === 'extension' ? player.id : undefined)));
   return { player, game, categories, summaries: { viewer: rows.summaries, catigory: rows.cidbuckets } };
 };
 
@@ -82,15 +83,13 @@ export const draft = async () => {
   };
   const eventy = async (opts: XOR<{ categoryId: DB.ColumnCondition<number> }, { id: DB.ColumnCondition<number> }>) => {
     const { categoryId = ['isNotNull'], id = ['isNotNull'] } = opts;
-    const drafts =
-      player &&
-      (await $get('drafts')({
-        where: { id, playerId: player.id, viewerId: user.id, categoryId }
-      }));
+    const drafts = player && (await $get('drafts')({ where: { id, playerId: player.id, viewerId: user.id, categoryId } }));
     const picks = drafts && (await $get('picks')({ where: { draftId: ['inArray', drafts.map(d => d.id)] } }));
     const events =
       player &&
       drafts &&
+      picks &&
+      picks.length &&
       (await (minimummy =>
         minimummy &&
         $get('events')({
@@ -106,13 +105,10 @@ export const draft = async () => {
             return earliest !== undefined && e.createdAt >= earliest;
           })
         ))(
-        picks &&
-          picks.length &&
-          picks.reduce((map, p) => {
-            const prior = map.get(p.pickable);
-            if (!prior || p.createdAt < prior) map.set(p.pickable, p.createdAt);
-            return map;
-          }, new Map<string, Date>())
+        picks.reduce((map, p) => {
+          const prior = map.get(p.pickable);
+          return ((!prior || p.createdAt < prior) && map.set(p.pickable, p.createdAt), map);
+        }, new Map<string, Date>())
       ));
 
     // Then use findMany (no RAW) to get events + observers

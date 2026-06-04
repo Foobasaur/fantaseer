@@ -16,9 +16,6 @@ export default $config({
       dev: { host: 'localhost', port: 5433, username: 'root', password: 'mysecretpassword', database: 'local' }
     });
 
-    // Drizzle Studio in dev
-    new sst.x.DevCommand('Studio', { link: [db], dev: { command: 'npx drizzle-kit studio' } });
-
     // Serverless SvelteKit
     new sst.aws.SvelteKit('MyWeb', {
       vpc,

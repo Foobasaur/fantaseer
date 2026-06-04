@@ -19,9 +19,17 @@ export default function ({ fetch = globalThis.fetch, path }: Opts) {
     Object.entries(params || {}).forEach(([k, v]) => input.searchParams.set(k, String(v)));
     console.log('EBS request:', input);
     const res = await fetch(input, { ...init, headers });
-    if (res.ok) return res.json();
-    const body = await res.text();
-    return error(599, JSON.parse(body)?.message || body || 'Unknown');
+    if (!res.ok) {
+      const body = await res.text();
+      return error(599, JSON.parse(body)?.message || body || 'Unknown');
+    }
+    const data = await res.json();
+    if (res.headers.get('x-gz')) {
+      const bytes = Uint8Array.from(atob(data.gz), c => c.charCodeAt(0));
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      return JSON.parse(await new Response(stream).text()) as T;
+    }
+    return data as T;
   };
   return {
     async get<T>(params?: Record<string, strumbol>) {

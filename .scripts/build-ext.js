@@ -11,13 +11,13 @@ const rewinder = [
 ];
 try {
   // Hash routing doesn't allow +server.ts — move API routes out for extension build
-  for (const { dir, back } of rewinder) {
-    if (existsSync(dir)) renameSync(dir, back);
-  }
+  // for (const { dir, back } of rewinder) {
+  //   if (existsSync(dir)) renameSync(dir, back);
+  // }
   execSync('vite build', { stdio: 'inherit', env: process.env });
 } finally {
   // Always restore API routes
-  for (const { dir, back } of rewinder) {
-    if (existsSync(back)) renameSync(back, dir);
-  }
+  // for (const { dir, back } of rewinder) {
+  //   if (existsSync(back)) renameSync(back, dir);
+  // }
 }

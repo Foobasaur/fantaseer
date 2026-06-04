@@ -1,6 +1,7 @@
 import { init as Games } from '$lib/core/games/games.server';
 import { providers } from '$lib/server/auth';
 import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit';
+import { gzipSync } from 'node:zlib';
 
 // const ALLOWED_ORIGIN = ['Access-Control-Allow-Origin', `https://${env.TWITCH_EXTENSION_CLIENT_ID}.ext-twitch.tv`];
 export const init: ServerInit = async () => {
@@ -10,8 +11,28 @@ export const init: ServerInit = async () => {
 export const handle: Handle = async ({ event, resolve }) => {
   const jwt = event.request.headers.get('x-ext-auth-jwt');
   const mode = event.request.headers.get('x-ext-ctx-mode');
-  event.locals.user = await providers.twitch.resolve(jwt, mode);
-  return resolve(event);
+  const client = event.request.headers.get('x-game-client');
+  event.locals.user = client !== 'HDT' && (await providers.twitch.resolve(jwt, mode));
+
+  const response = await resolve(event);
+  if (
+    response.body &&
+    client !== 'HDT' &&
+    event.url.hostname !== 'localhost' &&
+    response.headers.get('content-type')?.startsWith('application/json')
+  ) {
+    const raw = Buffer.from(await response.arrayBuffer());
+    if (raw.byteLength < 1_000_000) return new Response(raw, response); // small → passthrough (rebuild; body was consumed)
+
+    const headers = new Headers(response.headers);
+    headers.set('x-gz', '1');
+    headers.delete('content-length');
+    return new Response(JSON.stringify({ gz: gzipSync(raw).toString('base64') }), {
+      status: response.status,
+      statusText: response.statusText,
+      headers
+    });
+  } else return response; // passthrough
 };
 
 // Sentry.init({/*...*/})

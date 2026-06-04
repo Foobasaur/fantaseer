@@ -21,7 +21,6 @@ const cards = $derived.by(() => {
   </div>
 {/if}
 <div class="flex flex-wrap justify-center">
-{console.log('Rendering Pickems with props:', props, 'and derived cards:', cards)}
   {#each cards as card (card.id)}
     {#snippet badge()}<span class="picked-cycle" aria-hidden="true"></span>{/snippet}
     {#snippet overlay()}<span class="text-9xl  -ml-12  opacity-60 clock-cycle clock-glow" aria-hidden="true"></span>{/snippet}

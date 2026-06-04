@@ -68,10 +68,7 @@ export const hs: HSS = {
     initialized = false;
     console.log('Initializing HS module...', new Date().toLocaleTimeString());
     const contents = await CDN();
-    legal.Arena = [...contents.underground];
-    legal.Standard = [...contents.standard];
-    legal.Battlegrounds = [...contents.battlegrounds];
-    legal.Wild = [...contents.wild];
+    Object.assign(legal, contents);
     cards = [...contents.cards];
     cards.forEach(c => idbi.set(c.id, c));
     console.log('Initializing HS Done', new Date().toLocaleTimeString());
