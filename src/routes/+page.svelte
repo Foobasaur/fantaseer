@@ -27,7 +27,7 @@ const features = [
     icon: '🏆',
     img: scores,
     name: 'Scores',
-    tagline: "Beatem 'em",
+    tagline: "Beat 'em",
     desc: "Leaderboards roll fantasy engagement and pick'em points into one ranking."
   }
 ];
