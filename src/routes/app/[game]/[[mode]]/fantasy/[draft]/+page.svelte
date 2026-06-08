@@ -37,11 +37,12 @@ usePubSub({ 'events:created': _ => invalidate(data.dependz) });
       {data}
       submit={async store => {
         try {
-          const result = await ebs({ path: `/app/${data.game.code}/${params.mode}/fantasy/${params.draft}` }).post<
-            Server.EBS.Draft<'post'>
-          >({ picks: store.picks });
-          store.clear();
-          goto(`/app/${data.game.code}/${params.mode}/fantasy/${result.draft.id}`, { replaceState: true });
+          const req = ebs({ path: `/app/${data.game.code}/${params.mode}/fantasy/${params.draft}` });
+          const res = await req.post<Server.EBS.Draft<'post'>>({ picks: store.picks });
+          if (res.success) {
+            store.clear();
+            goto(`/app/${data.game.code}/${params.mode}/fantasy`, { replaceState: true });
+          } else throw new Error('Failed to create draft');
         } catch (err) {
           console.error(err);
           error = isHttpError(err) ? err.body.message : (err as Error).message || `An unexpected ${error} occurred`;

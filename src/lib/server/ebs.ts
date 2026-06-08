@@ -155,11 +155,11 @@ export const draft = async () => {
           .insert(tablez.drafts)
           .values({ viewerId: user.id, playerId: player!.id, categoryId: category!.id })
           .returning({ id: tablez.drafts.id });
-        const picks = await tx
+        const _ = await tx
           .insert(tablez.picks)
           .values(opts.picks.map(pick => ({ draftId: draft.id, pickable: module.toPickable(pick) })))
           .returning();
-        return { draft, picks };
+        return { success: true };
       });
     }
   };

@@ -4,7 +4,7 @@ import { renameSync, existsSync } from 'fs';
 
 process.env.DATABASE_URL = '';
 process.env.VITE_TARGET = 'extension';
-process.env.VITE_EBS_URL = 'https://d23w5d81b2617y.cloudfront.net';
+process.env.VITE_EBS_URL = 'https://d2lmitypqnq5o0.cloudfront.net';
 const rewinder = [
   // { dir: 'src/routes/+layout.ts', back: 'src/routes-back/+layout.ts' },
   { dir: 'src/routes/api', back: 'src/.api-bak' }

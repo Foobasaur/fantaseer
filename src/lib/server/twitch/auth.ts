@@ -6,6 +6,7 @@ import { delay } from '$lib/utilz/polly';
 import type { Server, Twitch } from '@';
 import { error } from '@sveltejs/kit';
 import { PubSubServer } from './PubSubServer';
+import { $update } from '../db/kit';
 
 // In-memory store for pending oidc logins
 const pending = new Map<string, Twitch.oauth2.Token | undefined>();
@@ -30,8 +31,9 @@ export const authenticate = async (token?: string) => {
     // NOTE You may also use the Bearer prefix in place of OAuth in the Authorization header.
     headers: { Authorization: token ? `OAuth ${token}` : authorization() } // https://dev.twitch.tv/docs/authentication/validate-tokens/
   });
-  const authorize = (player: Server.Auth.Identity<Twitch.Player>) => {
+  const authorize = async (player: Server.Auth.Identity<Twitch.Player>) => {
     event.locals.user = { authenticated: player, oauth: validated };
+    await $update('players')({ id: player.id, identityId: player.identityId })({ meta: event.locals.user });
     return player;
   };
   return {
@@ -40,14 +42,14 @@ export const authenticate = async (token?: string) => {
     },
     async get() {
       const player = await Player<Twitch.Player>(this.opts);
-      return authorize(player[0]);
+      return await authorize(player[0]);
     },
     async set() {
       const user = await fetch<Twitch.oauth2.UserInfo>('https://id.twitch.tv/oauth2/userinfo', {
         headers: { Authorization: token ? `Bearer ${token}` : authorization() }
       });
       const identity = await $Player<Twitch.Player>({ ...this.opts, meta: { validated: validated, user } });
-      const player = authorize(identity[0]);
+      const player = await authorize(identity[0]);
       PubSubServer.I.broadcast<'players'>(player.platformId, {
         event: 'players:updated',
         payload: player

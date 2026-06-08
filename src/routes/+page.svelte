@@ -1,13 +1,15 @@
 <script lang="ts">
 import { onMount } from 'svelte';
-import banner from '$lib/assets/fantaseer_banner.png';
-import fantasy from '$lib/assets/fantasy.png';
-import pickaroo from '$lib/assets/pickaroo.png';
-import scores from '$lib/assets/scoring.png';
+import banner from '$lib/assets/home/banner.png';
+import fantasy from '$lib/assets/home/fantasy.png';
+import pickaroo from '$lib/assets/home/pickaroo.png';
+import scores from '$lib/assets/home/scoring.png';
 
+const SPRITE_PX = 96; // logical sprite box; baked-in glow has room here
+const GLYPH_PX = 60;
 const GITHUB = 'https://github.com/Foobasaur';
 const TWITCH = 'https://dashboard.twitch.tv/extensions/jlhgspyu42o9po12ppumnwv9xy38nn-0.0.1';
-
+const EMOJIS = ['⚡', '✨', '👻', '👽', '💀', '🪙', '🎴', '🕹️', '🃏', '🌟', '🔮', '🎲'];
 const features = [
   {
     icon: '✨',
@@ -31,42 +33,12 @@ const features = [
     desc: "Leaderboards roll fantasy engagement and pick'em points into one ranking."
   }
 ];
+
 let active = $state<(typeof features)[number] | null>(null);
-
-const EMOJIS = ['⚡', '✨', '👻', '👽', '💀', '🪙', '🎴', '🕹️', '🃏', '🌟', '🔮', '🎲'];
-const SPRITE_PX = 96; // logical sprite box; baked-in glow has room here
-const GLYPH_PX = 60;
-
-type Mote = {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  opacity: number;
-  phaseX: number;
-  phaseY: number;
-  sprite: HTMLCanvasElement;
-};
+let canvas: HTMLCanvasElement;
 
 const rand = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
-
-const buildSprite = (emoji: string, dpr: number): HTMLCanvasElement => {
-  const c = document.createElement('canvas');
-  c.width = SPRITE_PX * dpr;
-  c.height = SPRITE_PX * dpr;
-  const cx = c.getContext('2d')!;
-  cx.scale(dpr, dpr);
-  cx.font = `${GLYPH_PX}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
-  cx.textAlign = 'center';
-  cx.textBaseline = 'middle';
-  cx.shadowColor = 'rgba(168, 85, 247, 0.7)';
-  cx.shadowBlur = 18;
-  cx.fillText(emoji, SPRITE_PX / 2, SPRITE_PX / 2);
-  return c;
-};
-
-const seed = (w: number, h: number, n: number, sprites: HTMLCanvasElement[]): Mote[] =>
+const seed = (w: number, h: number, n: number, sprites: HTMLCanvasElement[]) =>
   Array.from({ length: n }, () => ({
     x: rand(0, w),
     y: rand(0, h),
@@ -78,17 +50,25 @@ const seed = (w: number, h: number, n: number, sprites: HTMLCanvasElement[]): Mo
     phaseY: rand(0, 6.28),
     sprite: sprites[Math.floor(Math.random() * sprites.length)]
   }));
-
-let canvas: HTMLCanvasElement;
 onMount(() => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let dpr = 0;
   let sprites: HTMLCanvasElement[] = [];
-  let motes: Mote[] = [];
+  let dpr = 0;
   let raf = 0;
+  let motes = new Array<{
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    size: number;
+    opacity: number;
+    phaseX: number;
+    phaseY: number;
+    sprite: HTMLCanvasElement;
+  }>();
 
   const sync = () => {
     const newDpr = window.devicePixelRatio || 1;
@@ -97,7 +77,20 @@ onMount(() => {
 
     if (newDpr !== dpr) {
       dpr = newDpr;
-      sprites = EMOJIS.map(e => buildSprite(e, dpr));
+      sprites = EMOJIS.map(emoji => {
+        const c = document.createElement('canvas');
+        c.width = SPRITE_PX * dpr;
+        c.height = SPRITE_PX * dpr;
+        const cx = c.getContext('2d')!;
+        cx.scale(dpr, dpr);
+        cx.font = `${GLYPH_PX}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+        cx.textAlign = 'center';
+        cx.textBaseline = 'middle';
+        cx.shadowColor = 'rgba(168, 85, 247, 0.7)';
+        cx.shadowBlur = 18;
+        cx.fillText(emoji, SPRITE_PX / 2, SPRITE_PX / 2);
+        return c;
+      });
     }
 
     canvas.width = w * dpr;
@@ -144,10 +137,6 @@ onMount(() => {
 });
 </script>
 
-<svelte:head>
-  <title>fantaseer</title>
-  <meta name="description" content="fantasy game drafts and pick'ems, built for Twitch streamers." />
-</svelte:head>
 <svelte:window
   onkeydown={e => {
     if (e.key === 'Escape') active = null;
@@ -161,7 +150,10 @@ onMount(() => {
       if (e.key === 'Escape') active = null;
     }}
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm">
-    <img src={active.img} alt={active.name} class="max-h-[85vh] max-w-5xl rounded-2xl shadow-2xl ring-1 ring-purple-400/30" />
+    <img
+      src={active.img}
+      alt={active.name}
+      class="max-h-[85vh] max-w-[min(64rem,100%)] rounded-2xl shadow-2xl ring-1 ring-purple-400/30" />
   </div>
 {/if}
 <main class="relative min-h-screen overflow-hidden bg-[#0c0418] text-white">

@@ -53,7 +53,6 @@ export class Twitch extends Emitter {
 
     // Set up viewer change handler
     this.ext.viewer.onChanged(() => {
-      console.log('Viewer changed:', this.ext.viewer);
       this.emit('viewerChanged', this.ext.viewer);
     });
 

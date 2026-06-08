@@ -1,1 +1,108 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="107" height="128" viewBox="0 0 107 128"><title>svelte-logo</title><path d="M94.157 22.819c-10.4-14.885-30.94-19.297-45.792-9.835L22.282 29.608A29.92 29.92 0 0 0 8.764 49.65a31.5 31.5 0 0 0 3.108 20.231 30 30 0 0 0-4.477 11.183 31.9 31.9 0 0 0 5.448 24.116c10.402 14.887 30.942 19.297 45.791 9.835l26.083-16.624A29.92 29.92 0 0 0 98.235 78.35a31.53 31.53 0 0 0-3.105-20.232 30 30 0 0 0 4.474-11.182 31.88 31.88 0 0 0-5.447-24.116" style="fill:#ff3e00"/><path d="M45.817 106.582a20.72 20.72 0 0 1-22.237-8.243 19.17 19.17 0 0 1-3.277-14.503 18 18 0 0 1 .624-2.435l.49-1.498 1.337.981a33.6 33.6 0 0 0 10.203 5.098l.97.294-.09.968a5.85 5.85 0 0 0 1.052 3.878 6.24 6.24 0 0 0 6.695 2.485 5.8 5.8 0 0 0 1.603-.704L69.27 76.28a5.43 5.43 0 0 0 2.45-3.631 5.8 5.8 0 0 0-.987-4.371 6.24 6.24 0 0 0-6.698-2.487 5.7 5.7 0 0 0-1.6.704l-9.953 6.345a19 19 0 0 1-5.296 2.326 20.72 20.72 0 0 1-22.237-8.243 19.17 19.17 0 0 1-3.277-14.502 17.99 17.99 0 0 1 8.13-12.052l26.081-16.623a19 19 0 0 1 5.3-2.329 20.72 20.72 0 0 1 22.237 8.243 19.17 19.17 0 0 1 3.277 14.503 18 18 0 0 1-.624 2.435l-.49 1.498-1.337-.98a33.6 33.6 0 0 0-10.203-5.1l-.97-.294.09-.968a5.86 5.86 0 0 0-1.052-3.878 6.24 6.24 0 0 0-6.696-2.485 5.8 5.8 0 0 0-1.602.704L37.73 51.72a5.42 5.42 0 0 0-2.449 3.63 5.79 5.79 0 0 0 .986 4.372 6.24 6.24 0 0 0 6.698 2.486 5.8 5.8 0 0 0 1.602-.704l9.952-6.342a19 19 0 0 1 5.295-2.328 20.72 20.72 0 0 1 22.237 8.242 19.17 19.17 0 0 1 3.277 14.503 18 18 0 0 1-8.13 12.053l-26.081 16.622a19 19 0 0 1-5.3 2.328" style="fill:#fff"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="107" height="128" viewBox="0 0 107 128">
+  <title>gold-star-emblem</title>
+  <defs>
+    <linearGradient id="goldLight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF1B8"/>
+      <stop offset="0.45" stop-color="#F4C843"/>
+      <stop offset="1" stop-color="#D69A12"/>
+    </linearGradient>
+    <linearGradient id="goldDark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C7951A"/>
+      <stop offset="0.55" stop-color="#9C6E0B"/>
+      <stop offset="1" stop-color="#6E4C05"/>
+    </linearGradient>
+    <linearGradient id="goldFrame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FBE08C"/>
+      <stop offset="0.5" stop-color="#D9A422"/>
+      <stop offset="1" stop-color="#8C6308"/>
+    </linearGradient>
+    <radialGradient id="ruby" cx="0.38" cy="0.32" r="0.85">
+      <stop offset="0" stop-color="#FF8FA8"/>
+      <stop offset="0.4" stop-color="#E11D54"/>
+      <stop offset="1" stop-color="#8A0930"/>
+    </radialGradient>
+    <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.55" stop-color="#DCE2EA"/>
+      <stop offset="1" stop-color="#A9B2BE"/>
+    </linearGradient>
+    <radialGradient id="bg" cx="0.5" cy="0.42" r="0.75">
+      <stop offset="0" stop-color="#222831"/>
+      <stop offset="1" stop-color="#13171C"/>
+    </radialGradient>
+  </defs>
+
+  <!-- ===== centered square frame ===== -->
+  <g fill="none" stroke="url(#goldFrame)" stroke-linejoin="round">
+    <rect x="7.5" y="18" width="92" height="92" rx="3" stroke-width="3.4"/>
+    <rect x="12.5" y="23" width="82" height="82" rx="2" stroke-width="1.6"/>
+  </g>
+
+  <!-- ===== gears (right side) ===== -->
+  <g>
+    <g transform="translate(82,52) scale(0.62)">
+      <path d="M10,0 L6.93,2.87 L7.07,7.07 L2.87,6.93 L0,10 L-2.87,6.93 L-7.07,7.07 L-6.93,2.87 L-10,0 L-6.93,-2.87 L-7.07,-7.07 L-2.87,-6.93 L0,-10 L2.87,-6.93 L7.07,-7.07 L6.93,-2.87 Z" fill="url(#goldDark)"/>
+      <circle r="4.2" fill="url(#goldFrame)"/>
+      <circle r="1.7" fill="#4A3306"/>
+    </g>
+    <g transform="translate(76,90) scale(0.82)">
+      <path d="M10,0 L6.93,2.87 L7.07,7.07 L2.87,6.93 L0,10 L-2.87,6.93 L-7.07,7.07 L-6.93,2.87 L-10,0 L-6.93,-2.87 L-7.07,-7.07 L-2.87,-6.93 L0,-10 L2.87,-6.93 L7.07,-7.07 L6.93,-2.87 Z" fill="url(#goldDark)"/>
+      <circle r="4.2" fill="url(#goldFrame)"/>
+      <circle r="1.7" fill="#4A3306"/>
+    </g>
+    <g transform="translate(64,40) scale(0.4)">
+      <path d="M10,0 L6.93,2.87 L7.07,7.07 L2.87,6.93 L0,10 L-2.87,6.93 L-7.07,7.07 L-6.93,2.87 L-10,0 L-6.93,-2.87 L-7.07,-7.07 L-2.87,-6.93 L0,-10 L2.87,-6.93 L7.07,-7.07 L6.93,-2.87 Z" fill="url(#goldFrame)"/>
+      <circle r="3.6" fill="#4A3306"/>
+    </g>
+  </g>
+
+  <!-- ===== small diamond stars (left side) ===== -->
+  <g>
+    <g transform="translate(30,40) rotate(-6)">
+      <path d="M0,-12 L3.2,-3.2 L10,0 L3.2,3.2 L0,12 L-3.2,3.2 L-10,0 L-3.2,-3.2 Z" fill="url(#silver)" stroke="#9C6E0B" stroke-width="0.7" stroke-linejoin="round"/>
+      <circle r="2.4" fill="url(#ruby)"/>
+    </g>
+    <g transform="translate(31,92) rotate(8)">
+      <path d="M0,-12 L3.2,-3.2 L10,0 L3.2,3.2 L0,12 L-3.2,3.2 L-10,0 L-3.2,-3.2 Z" fill="url(#silver)" stroke="#9C6E0B" stroke-width="0.7" stroke-linejoin="round"/>
+      <circle r="2.4" fill="url(#ruby)"/>
+    </g>
+  </g>
+
+  <!-- scattered rubies -->
+  <g fill="url(#ruby)">
+    <circle cx="70" cy="37" r="2.1"/>
+    <circle cx="89" cy="55" r="2.1"/>
+    <circle cx="84" cy="73" r="2"/>
+    <circle cx="61" cy="101" r="2"/>
+  </g>
+
+  <!-- ===== central 4-point star (faceted) ===== -->
+  <!-- light facets -->
+  <g fill="url(#goldLight)">
+    <path d="M53.5,18 L43.5,54 L53.5,64 Z"/>
+    <path d="M93.5,64 L63.5,54 L53.5,64 Z"/>
+    <path d="M53.5,110 L63.5,74 L53.5,64 Z"/>
+    <path d="M13.5,64 L43.5,74 L53.5,64 Z"/>
+  </g>
+  <!-- dark facets -->
+  <g fill="url(#goldDark)">
+    <path d="M53.5,18 L63.5,54 L53.5,64 Z"/>
+    <path d="M93.5,64 L63.5,74 L53.5,64 Z"/>
+    <path d="M53.5,110 L43.5,74 L53.5,64 Z"/>
+    <path d="M13.5,64 L43.5,54 L53.5,64 Z"/>
+  </g>
+  <!-- crisp outline -->
+  <path d="M53.5,18 L63.5,54 L93.5,64 L63.5,74 L53.5,110 L43.5,74 L13.5,64 L43.5,54 Z"
+        fill="none" stroke="#6E4C05" stroke-width="1" stroke-linejoin="round"/>
+
+  <!-- ===== ruby cross at the heart ===== -->
+  <g fill="url(#ruby)">
+    <circle cx="53.5" cy="49" r="2.3"/>
+    <circle cx="53.5" cy="56" r="3"/>
+    <circle cx="53.5" cy="64" r="3.6"/>
+    <circle cx="53.5" cy="72" r="3"/>
+    <circle cx="53.5" cy="79" r="2.3"/>
+    <circle cx="45" cy="64" r="2.7"/>
+    <circle cx="62" cy="64" r="2.7"/>
+  </g>
+</svg>

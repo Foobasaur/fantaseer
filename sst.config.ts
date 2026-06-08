@@ -2,10 +2,10 @@
 export default $config({
   app(input) {
     return {
-      name: 'fantaseer-sveltekit',
+      name: 'fantaseer-kit',
       home: 'aws',
-      removal: input?.stage === 'prod' ? 'retain' : 'remove',
-      protect: ['prod'].includes(input?.stage)
+      removal: ['prod', 'beta'].includes(input?.stage) ? 'retain' : 'remove',
+      protect: ['prod', 'beta'].includes(input?.stage)
     };
   },
   async run() {
@@ -21,13 +21,13 @@ export default $config({
       vpc,
       link: [db],
       warm: 1,
+      // invalidation: { paths: 'all', wait: true }, // block until /* purge completes
       transform: {
         server: args => {
           args.timeout = '30 seconds';
           args.memory = '4096 MB';
         }
       },
-      // invalidation: { paths: 'all', wait: true }, // block until /* purge completes
       environment: {
         TWITCH_CLIENT_ID: process.env.TWITCH_CLIENT_ID!,
         TWITCH_CLIENT_SECRET: process.env.TWITCH_CLIENT_SECRET!,
