@@ -3,6 +3,16 @@ import type { Pathname, ResolvedPathname } from '$app/types';
 import { Twitch } from '$lib/core/twitch/svelted/services/Extension.svelte';
 import { error } from '@sveltejs/kit';
 
+// gate: { gz } wrapper → decompressed json, else passthrough
+const ungz = async (d: any) =>
+  typeof d?.gz === 'string' ?
+    JSON.parse(
+      await new Response(
+        new Blob([Uint8Array.from(atob(d.gz), c => c.charCodeAt(0))]).stream().pipeThrough(new DecompressionStream('gzip'))
+      ).text()
+    )
+  : d;
+
 type Opts = { fetch?: typeof fetch; path: Pathname | ResolvedPathname };
 export default function ({ fetch = globalThis.fetch, path }: Opts) {
   const endpoint = path.replace(/^.*?\/?api\/([^#?]*).*$/, '/$1').replace(/\/undefined/g, '');
@@ -23,13 +33,7 @@ export default function ({ fetch = globalThis.fetch, path }: Opts) {
       const body = await res.text();
       return error(599, JSON.parse(body)?.message || body || 'Unknown');
     }
-    const data = await res.json();
-    if (res.headers.get('x-gz')) {
-      const bytes = Uint8Array.from(atob(data.gz), c => c.charCodeAt(0));
-      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-      return JSON.parse(await new Response(stream).text()) as T;
-    }
-    return data as T;
+    return (await ungz(await res.json())) as T;
   };
   return {
     async get<T>(params?: Record<string, strumbol>) {

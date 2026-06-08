@@ -37,12 +37,10 @@ const picks = $derived(store?.picks || []);
 const filter = $derived(store?.filter);
 
 // CATEGORY VALIDATION: Filter cards by category draftables (expansion sets)
-const draftable = $derived.by(() => {
-  return {
-    pickables: data.pickables as Card[],
-    draftables: store?.rules.draftables(data.draftables) || []
-  };
-});
+const draftable = $derived.by(() => ({
+  pickables: (data.pickables ?? []) as Card[],
+  draftables: store?.rules.draftables(data.draftables) || []
+}));
 
 // FILTERED CARDS: Apply filtration based on selected filters
 const Filtered = $derived.by(() => {

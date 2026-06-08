@@ -120,11 +120,9 @@ export const draft = async () => {
       // Load user's drafts for this category
       const { drafts, picks, events, observers } = await eventy({ categoryId: Number(category?.id) || ['isNotNull'] });
       const open = drafts && category && nexty(drafts);
-
       return { picks, events, observers, drafts, open };
     },
     get: async () => {
-      // const data = { pickables, draftables, draft: null };
       if (e.event.params.draft === 'new')
         return { pickables: module.pickables(category?.mode), draftables: module.draftables(category?.mode), draft: null };
 

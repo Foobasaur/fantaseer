@@ -1,5 +1,6 @@
 // Hearthstone json API client with CDN URL construction
 import { cached } from '$lib/utilz/fscache';
+import { kMaxLength } from 'buffer';
 import type { Card, ICard, ImgResolution } from '../types';
 import { FormatType, GameTag, GameType } from './enums';
 import { parse } from './xdefs';
@@ -36,11 +37,13 @@ export default async function ({
   );
 
   const [Arena, Standard, Wild] = await Promise.all(
-    [legal.arena, legal.standard, legal.wild].map(url =>
-      cached(new URL(url).searchParams.get('game_type')! + new URL(url).searchParams.get('format_type'), async () => {
-        const res = await fetch(url, { headers: { 'User-Agent': 'HDTPortable/1.0 (Unknown)' } });
-        return (await res.json()) as string[];
-      })
+    Object.entries(legal).map(async ([k, v]) =>
+      ['mock', 'extension'].includes(import.meta.env.VITE_TARGET) ?
+        await cached(k, async () => {
+          const res = await fetch(v, { headers: { 'User-Agent': 'HDTPortable/1.0 (Unknown)' } });
+          return (await res.json()) as string[];
+        })
+      : (JSON.parse((await import(`../../../../../../.cache/${k}.json?raw`)).default) as string[])
     )
   );
 
@@ -48,7 +51,12 @@ export default async function ({
     ['mock', 'extension'].includes(import.meta.env.VITE_TARGET) ?
       await cached('battlegrounds', async () => {
         const res = await fetch(xdefs);
-        const defs = parse(await res.text(),[GameTag.BACON_HERO_CAN_BE_DRAFTED, GameTag.BACON_TIMEWARPED, GameTag.IS_BACON_POOL_MINION, GameTag.IS_BACON_POOL_SPELL]);
+        const defs = parse(await res.text(), [
+          GameTag.BACON_HERO_CAN_BE_DRAFTED,
+          GameTag.BACON_TIMEWARPED,
+          GameTag.IS_BACON_POOL_MINION,
+          GameTag.IS_BACON_POOL_SPELL
+        ]);
         return defs.entities.map(e => e.cardID);
       })
     : await (async () => {

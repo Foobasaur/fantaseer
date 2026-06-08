@@ -42,7 +42,7 @@ export const providers = {
               is_unlinked: false,
               pubsub_perms: { listen: ['broadcast', 'whisper-UZz3YwoOd_efdBnxftIxN', 'global'] }
             } as Twitch.Ext.JWTPayload
-          }))((await Viewer<Twitch.Viewer>({ id: process.env.VITE_TARGET === 'mock' ? 7 : 1 }))[0]);
+          }))((await Viewer<Twitch.Viewer>({ id: 1 }))[0]);
       }
     }
   } satisfies Server.Auth.IAuthProvider<Twitch.Viewer | Twitch.Player, Twitch.Ext.JWTPayload>
