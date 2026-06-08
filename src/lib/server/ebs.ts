@@ -210,19 +210,20 @@ export const pickaroo = async () => {
 };
 export const configure = () => {
   const e = req();
+  const get = async () => {
+    const events = await $get('events')({ where: { playerId: e.authenticated.id } });
+    const drafts = await $get('drafts')({ where: { playerId: e.authenticated.id } });
+    const banned = await $get('banned')({ where: { playerId: e.authenticated.id } });
+    const viewers = await $get('viewers')<{ username: string; avatar: string; helix: Twitch.Ext.HelixUser }>({
+      where: {
+        id: ['inArray', [...new Set([...drafts.map(d => d.viewerId), ...banned.map(b => b.viewerId)])]]
+      }
+    });
+    return { viewers, drafts, banned, events, player: await e.player() };
+  };
   return {
-    async get() {
-      const events = await $get('events')({ where: { playerId: e.authenticated.id } });
-      const drafts = await $get('drafts')({ where: { playerId: e.authenticated.id } });
-      const banned = await $get('banned')({ where: { playerId: e.authenticated.id } });
-      const viewers = await $get('viewers')<{ username: string; avatar: string; helix: Twitch.Ext.HelixUser }>({
-        where: {
-          id: ['inArray', [...new Set([...drafts.map(d => d.viewerId), ...banned.map(b => b.viewerId)])]]
-        }
-      });
-      return { viewers, drafts, banned, events, player: await e.player() };
-    },
-    async post() {
+    get,
+    post: async () => {
       const body = await e.event.request.json();
       const options = {
         viewer: async (meta: Twitch.Ext.HelixUser) => {
@@ -237,7 +238,7 @@ export const configure = () => {
             identityId: viewer.identityId
           })({ meta: { username: meta.display_name, avatar: meta.profile_image_url } });
         },
-        broadcaster: async ({ action, ids }: { action: string; ids: number[] }) => {
+        config: async ({ action, ids }: { action: string; ids: number[] }) => {
           const actions = {
             // Delete drafts added to player channel
             disqualify: async () => {
@@ -254,7 +255,7 @@ export const configure = () => {
             }
           };
           await actions[action as keyof typeof actions]();
-          return await this.get();
+          return await get();
         }
       };
       return options[e.event.params.kind as keyof typeof options](body);

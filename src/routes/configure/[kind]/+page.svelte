@@ -1,10 +1,9 @@
 <script lang="ts">
-import { resolve } from '$app/paths';
 import ebs from '$lib/svelted/ebs';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
 import { kappa } from '$lib/utilz/morph';
 
-let { data, params } = $props();
+let { data } = $props();
 let selected = $state({
   viewers: new Set<number>(),
   drafts: new Set<number>(),
@@ -74,7 +73,7 @@ const error = $derived(
       class="btn btn-sm btn-error"
       disabled={!selected[tab].size}
       onclick={async () => {
-        const client = ebs({ path: resolve('/configure/[kind]', { kind: params.kind }) });
+        const client = ebs({ path: `/configure/config` });
         data = await client.post({ action: actionable[tab].action, ids: [...selected[tab]] });
         selected[tab] = new Set();
       }}>
