@@ -30,7 +30,9 @@ export namespace Game {
   };
 
   // Prediction templates (for pickaroo feature)
-  type Pickaroo<TEntity, Tmodes extends string> = Modular<TEntity, Tmodes>;
+  type Pickaroo<TEntity, Tmodes extends string> = Modular<TEntity, Tmodes> & {
+    readonly describe: string;
+  };
 
   type Metric = { label: string; weight: number; description?: string };
 
@@ -54,8 +56,8 @@ export namespace Game {
     init(): Promise<this>;
 
     // Data access and mapping
-    draftables: (mode?: (Tmodes)[number]) => string[];
-    pickables: (mode?: (Tmodes)[number]) => T[];
+    draftables: (mode?: Tmodes[number]) => string[];
+    pickables: (mode?: Tmodes[number]) => T[];
     toPickable: {
       (entity: T): string;
       (entity: T[]): string[];

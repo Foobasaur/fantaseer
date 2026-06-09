@@ -1,5 +1,7 @@
 <script lang="ts">
 import ebs from '$lib/svelted/ebs';
+import empty from '$lib/assets/empty.png';
+import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
 import { kappa } from '$lib/utilz/morph';
 
@@ -22,13 +24,13 @@ const actionable = $derived.by(() => {
         .filter(v => !data.banned.some(b => b.viewerId === v.id))
         .map(e => ({ ...e, display: viewer(e.id, e.meta) }))
     },
-    drafts: {
-      action: 'disqualify',
-      data: data.drafts.map(e => ({ ...e, display: viewer(e.viewerId) }))
-    },
     events: {
       action: 'clear',
       data: data.events.map(e => ({ ...e, display: `${e.eventable} - ${e.pickable}` }))
+    },
+    drafts: {
+      action: 'delete',
+      data: data.drafts.map(e => ({ ...e, display: viewer(e.viewerId) }))
     },
     banned: {
       action: 'unban',
@@ -92,13 +94,16 @@ const error = $derived(
             next.has(entity.id) ? next.delete(entity.id) : next.add(entity.id);
             selected[tab] = new Set(next);
           }} />
-        <div class="flex-1">
-          <span class="text-sm font-medium">{entity.display}</span>
-          <span class="text-xs opacity-60"> #{entity.id}</span>
+        <div class="flex-1 text-sm space-x-1">
+          <span class="font-medium">{entity.display}</span>
+          <span class="text-xs opacity-60">{entity.createdAt.toLocaleString()}</span>
+          {#if 'categoryId' in entity}
+            {@const category = data.categories.find(c => c.id === entity.categoryId)}
+            {#if category}<span class="opacity-60">({category.mode})</span>{/if}
+          {/if}
+          <!-- <span class="text-xs opacity-60">#{entity.id}</span> -->
         </div>
       </div>
-    {:else}
-      <p class="py-8 text-center text-sm opacity-60">No {tab} on this channel yet</p>
-    {/each}
+    {:else}<Empty src={empty} tagline="Nope" />{/each}
   </div>
 </div>

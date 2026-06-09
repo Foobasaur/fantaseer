@@ -8,11 +8,7 @@ const dependz = 'app:layout:load';
 export const load = async ({ fetch, depends, untrack, params }: Parameters<LayoutLoad>[0]) => {
   depends(dependz);
   const mode = untrack(() => params.mode);
-  const data = await ebs({
-    fetch,
-    path: `/app/${params.game}${mode ? `/${mode}` : ''}`
-  }).get<Server.EBS.Game>();
-
+  const data = await ebs({ fetch, path: `/app/${params.game}${mode ? `/${mode}` : ''}` }).get<Server.EBS.Game>();
   const empty = () => ({
     fantasy: {
       drafts: 0,

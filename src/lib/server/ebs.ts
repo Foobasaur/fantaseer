@@ -17,12 +17,10 @@ const req = () => {
       return event;
     },
     get user() {
-      const user = this.event.locals.user || error(401, { message: 'Unauthorized' });
-      return user;
+      return this.event.locals.user || error(401, { message: 'Unauthorized' });
     },
     get authenticated() {
-      const user = this.user.authenticated || error(401, { message: 'Unauthenticated' });
-      return user;
+      return this.user.authenticated || error(401, { message: 'Unauthenticated' });
     },
     get jwt() {
       return this.user.jwt || error(401, { message: 'No JWT' });
@@ -31,7 +29,7 @@ const req = () => {
       const [player] = await Player({ platform: 'twitch', platformId: this.jwt.channel_id });
       return player;
     },
-    async module() {
+    async model() {
       const [game] = await $get('games')({ where: { code: event.params.game } });
       const categories = await $get('categories')({ where: { gameId: game.id } });
       const category = categories.find(c => c.mode === event.params.mode);
@@ -54,7 +52,7 @@ export const games = async () => {
 };
 
 export const game = async () => {
-  const { module, game, categories, player } = await req().module();
+  const { module, game, categories, player } = await req().model();
   const rows = (s => ({
     ...s,
     summaries: s?.buckets.map(s => {
@@ -74,7 +72,7 @@ export const game = async () => {
 
 export const draft = async () => {
   const e = req();
-  const { user, module, category, player } = await e.module();
+  const { user, module, category, player } = await e.model();
 
   const TIME_BETWEEN_DRAFTS = timez.hour(12);
   const nexty = (drafts: DB.Infertable['drafts'][]) => {
@@ -123,16 +121,15 @@ export const draft = async () => {
       return { picks, events, observers, drafts, open };
     },
     get: async () => {
-      if (e.event.params.draft === 'new')
-        return { pickables: module.pickables(category?.mode), draftables: module.draftables(category?.mode), draft: null };
-
-      // Validate draft ownership and load picks.
-      const { drafts = [], picks = [], events, observers } = await eventy({ id: Number(e.event.params.draft) });
-      return {
-        events,
-        observers,
-        draft: { ...drafts[0], picks, pickables: module.fromPickable(picks.map(p => p.pickable)) }
-      };
+      if (e.event.params.draft !== 'new') {
+        // Validate draft ownership and load picks.
+        const { drafts = [], picks = [], events, observers } = await eventy({ id: Number(e.event.params.draft) });
+        return {
+          events,
+          observers,
+          draft: { ...drafts[0], picks, pickables: module.fromPickable(picks.map(p => p.pickable)) }
+        };
+      } else return { pickables: module.pickables(category?.mode), draftables: module.draftables(category?.mode) };
     },
     post: async <T extends { id: string }>() => {
       const opts = (await e.event.request.json()) as { picks: T[] };
@@ -164,7 +161,7 @@ export const draft = async () => {
 };
 export const pickaroo = async () => {
   const e = req();
-  const { user, module, category, player } = await e.module();
+  const { user, module, category, player } = await e.model();
   return {
     get: async () => {
       // Hydrate pickable IDs into game-module display data
@@ -217,7 +214,7 @@ export const configure = () => {
         id: ['inArray', [...new Set([...drafts.map(d => d.viewerId), ...banned.map(b => b.viewerId)])]]
       }
     });
-    return { viewers, drafts, banned, events, player: await e.player() };
+    return { viewers, drafts, banned, events, player: await e.player(), categories: await $get('categories')() };
   };
   return {
     get,
@@ -239,10 +236,7 @@ export const configure = () => {
         config: async ({ action, ids }: { action: string; ids: number[] }) => {
           const actions = {
             // Delete drafts added to player channel
-            disqualify: async () => {
-              await $delete('drafts')({ where: { id: ['inArray', ids] } });
-            },
-
+            delete: () => $delete('drafts')({ where: { id: ['inArray', ids] } }),
             // Ban viewer from participating
             ban: () => $insert('banned')(ids.map(viewerId => ({ viewerId, playerId: e.authenticated.id }))),
             unban: () => $delete('banned')({ where: { playerId: e.authenticated.id, id: ['inArray', ids] } }),

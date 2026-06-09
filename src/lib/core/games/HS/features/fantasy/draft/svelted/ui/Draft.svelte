@@ -57,6 +57,22 @@ const Filter = (mechanic: strumbol) =>
       checker(mechanic, c.mechanics) ||
       checker(mechanic, c.referencedTags)
   );
+// DEBUG: card count per set
+// $effect(() => {
+//   const name = new Map(draftable.draftables);
+//   const n: Record<string, number> = {};
+//   for (const c of draftable.pickables) {
+//     const k = (name.get(c.set as string) ?? c.set) as string;
+//     n[k] = (n[k] ?? 0) + 1;
+//   }
+
+//   console.table(n);
+//   const log = Object.entries(n)
+//     .sort((a, b) => b[1] - a[1])
+//     .map(([s, c]) => `${s}: ${c}`)
+//     .join('\n');
+//   console.log(`${log}\ntotal: ${draftable.pickables.length}`);
+// });
 </script>
 
 {#snippet Pickles()}
@@ -68,7 +84,6 @@ const Filter = (mechanic: strumbol) =>
       idx > -1 && picks.splice(idx, 1);
     }} />
 {/snippet}
-
 <div class="drawer drawer-end">
   <input id="draft-drawer" type="checkbox" class="drawer-toggle" />
 
@@ -126,9 +141,9 @@ const Filter = (mechanic: strumbol) =>
         </details>
 
         <!-- Draft drawer toggle button -->
-        <label for="draft-drawer" class="drawer-button absolute right-0 -bottom-24 z-9 col-span-full flex cursor-pointer">
-          <figure class="scale-69">
-            <img src={cardpack} alt="Open Picks" class="h-full w-full object-contain" loading="lazy" decoding="async" />
+        <label for="draft-drawer" class="drawer-button absolute right-0 -bottom-24 z-9 flex cursor-pointer">
+          <figure class="relative scale-[.69]">
+            <img src={cardpack} alt="Open Picks" class="h-full w-full object-contain" />
             <span class="absolute inset-0 mt-3 flex justify-center">🔱</span>
             <span class="absolute inset-0 mt-5 flex items-center justify-center">
               <span class="badge badge-soft font-semibold backdrop-blur-sm">

@@ -11,6 +11,7 @@ import type { Card } from '../../types';
 type Rules = Game.Pickaroo<Card, GameMode>;
 const basic: Rules = {
   modes: ['Standard', 'Arena', 'Wild'],
+  describe: "Next 3 Turn Draw",
   display(card) {
     return card.img.render['256x'];
   }
@@ -18,6 +19,7 @@ const basic: Rules = {
 
 const bg: Rules = {
   modes: ['Battlegrounds'],
+  describe: "Next Top 4 Placement",
   display(card) {
     return card.type === 'HERO' ? card.img.hero['256x'] : card.img.render['256x'].replace('/render/', '/bgs/');
   }

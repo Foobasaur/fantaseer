@@ -16,13 +16,7 @@ const { title, icon, tagline } = $derived({ ...foobonic(), ...props });
 </script>
 
 <div class={['items-center justify-center text-center mt-9', props.class]}>
-  {#if src}
-    <img
-      {src}
-      alt="Empty"
-      class={['justify-self-center', props.animate && 'empty-animate']}
-      loading="lazy"
-      decoding="async" />
+  {#if src}<img {src} alt="Empty" class={['justify-self-center', props.animate && 'empty-animate']} />
   {:else}
     <div class="empty-rotate">
       <div class={['mb-4 text-9xl empty-glow', props.animate && 'empty-animate']}>{icon}</div>

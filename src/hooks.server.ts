@@ -15,23 +15,11 @@ export const handle: Handle = async ({ event, resolve }) => {
   event.locals.user = client !== 'HDT' && (await providers.twitch.resolve(jwt, mode));
 
   const response = await resolve(event);
-  if (
-    response.body &&
-    client !== 'HDT' &&
-    event.url.hostname !== 'localhost' &&
-    response.headers.get('content-type')?.startsWith('application/json')
-  ) {
+  if (client !== 'HDT' && response.body && response.headers.get('content-type')?.startsWith('application/json')) {
     const raw = Buffer.from(await response.arrayBuffer());
-    if (raw.byteLength < 1_000_000) return new Response(raw, response); // small → passthrough (rebuild; body was consumed)
-
-    const headers = new Headers(response.headers);
-    headers.set('x-gz', '1');
-    headers.delete('content-length');
-    return new Response(JSON.stringify({ gz: gzipSync(raw).toString('base64') }), {
-      status: response.status,
-      statusText: response.statusText,
-      headers
-    });
+    return raw.byteLength < 999_999 ?
+        new Response(raw, response) // small → passthrough
+      : new Response(gzipSync(raw).toString('base64'), (response.headers.delete('content-length'), response)); // large → gzip + base64
   } else return response; // passthrough
 };
 

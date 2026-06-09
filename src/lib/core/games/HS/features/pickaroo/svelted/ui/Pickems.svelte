@@ -16,16 +16,18 @@ const cards = $derived.by(() => {
 
 {#if cards.length && !pick}
   <div
-    class="sticky top-6 z-9 pointer-events-none mx-auto w-fit text-6xl opacity-90 clock-cycle clock-glow"
-    aria-hidden="true">
+    aria-hidden="true"
+    class="sticky top-6 z-9 pointer-events-none mx-auto flex w-fit items-center justify-center whitespace-nowrap
+     text-4xl clock-cycle clock-glow">
+    <span class="text-[clamp(1rem,6vw,3.75rem)] font-bold [text-shadow:0_1px_3px_rgba(0,0,0,0.95)]"
+      >{store.rules.describe}</span>
   </div>
 {/if}
 <div class="flex flex-wrap justify-center">
   {#each cards as card (card.id)}
     {#snippet badge()}<span class="picked-cycle" aria-hidden="true"></span>{/snippet}
-    {#snippet overlay()}<span class="text-9xl  -ml-12  opacity-60 clock-cycle clock-glow" aria-hidden="true"></span>{/snippet}
+    {#snippet overlay()}<span class="text-9xl opacity-60 clock-cycle clock-glow" aria-hidden="true"></span>{/snippet}
     {@const picked = pick?.id === card.id}
-    {console.log('Rendering pickable card:', card)}
     <Cardio
       class={card.type === 'HERO' ? `[&_img]:-mb-5` : `[&_img]:-mb-9`}
       img={{ src: store.rules.display(card) }}
@@ -39,8 +41,6 @@ const cards = $derived.by(() => {
 <style>
 .clock-cycle {
   line-height: 1;
-  width: 1em;
-  height: 1em;
 }
 .clock-glow {
   filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.963)) drop-shadow(0 0 3px rgba(255, 255, 255, 0.3));

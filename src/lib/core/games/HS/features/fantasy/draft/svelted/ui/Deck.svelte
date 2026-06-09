@@ -61,8 +61,7 @@ const deck = $derived.by(() => {
             <img
               src={card.img.tile}
               alt={card.name}
-              class="absolute inset-0 h-full w-full object-cover object-center transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:opacity-80"
-              loading="lazy" />
+              class="absolute inset-0 h-full w-full object-cover object-center transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:opacity-80" />
             <div class="absolute inset-0 bg-linear-to-r from-base-100/90 via-base-100/50 to-transparent"></div>
             <span
               class="relative z-10 origin-left pl-2 text-sm font-semibold transition-all duration-100 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]">

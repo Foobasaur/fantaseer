@@ -37,7 +37,7 @@ export const providers = {
               exp: 1778048730,
               opaque_user_id: 'UZz3YwoOd_efdBnxftIxN',
               user_id: '174152420',
-              channel_id: '1480939574',
+              channel_id: '174152420',
               role: 'viewer',
               is_unlinked: false,
               pubsub_perms: { listen: ['broadcast', 'whisper-UZz3YwoOd_efdBnxftIxN', 'global'] }

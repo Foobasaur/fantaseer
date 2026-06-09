@@ -31,9 +31,8 @@ export const authenticate = async (token?: string) => {
     // NOTE You may also use the Bearer prefix in place of OAuth in the Authorization header.
     headers: { Authorization: token ? `OAuth ${token}` : authorization() } // https://dev.twitch.tv/docs/authentication/validate-tokens/
   });
-  const authorize = async (player: Server.Auth.Identity<Twitch.Player>) => {
+  const authorize = (player: Server.Auth.Identity<Twitch.Player>) => {
     event.locals.user = { authenticated: player, oauth: validated };
-    await $update('players')({ id: player.id, identityId: player.identityId })({ meta: event.locals.user });
     return player;
   };
   return {
@@ -42,18 +41,18 @@ export const authenticate = async (token?: string) => {
     },
     async get() {
       const player = await Player<Twitch.Player>(this.opts);
-      return await authorize(player[0]);
+      return authorize(player[0]);
     },
     async set() {
       const user = await fetch<Twitch.oauth2.UserInfo>('https://id.twitch.tv/oauth2/userinfo', {
         headers: { Authorization: token ? `Bearer ${token}` : authorization() }
       });
       const identity = await $Player<Twitch.Player>({ ...this.opts, meta: { validated: validated, user } });
-      const player = await authorize(identity[0]);
-      PubSubServer.I.broadcast<'players'>(player.platformId, {
-        event: 'players:updated',
-        payload: player
-      }); // Notify any active sessions of updated identity
+      const player = authorize(identity[0]);
+      await $update('players')({ id: player.id })({
+        meta: { avatar: player.meta.user.picture, username: player.meta.user.preferred_username }
+      }); // Keep avatar + email up-to-date
+      PubSubServer.I.broadcast<'players'>(player.platformId, { event: 'players:updated', payload: player }); // Notify any active sessions of updated identity
       return player;
     }
   };

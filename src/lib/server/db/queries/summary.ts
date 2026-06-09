@@ -103,42 +103,13 @@ export const fantasy = async (categories: DB.Infertable['categories'][], playerI
 
 /** Get aggregated pickems summary across categories */
 export const pickems = async (categories: DB.Infertable['categories'][], playerId?: number) => {
-  // const rows = await db
-  //   .select({
-  //     ...getColumns(tablez.pickems),
-  //     eventable: tablez.events.eventable,
-  //     eventPickable: tablez.events.pickable
-  //   })
-  //   .from(tablez.pickems)
-  //   .innerJoin(tablez.pickaroos, eq(tablez.pickaroos.id, tablez.pickems.pickarooId))
-  //   .leftJoin(tablez.events, eq(tablez.events.id, tablez.pickaroos.outcomeId))
-  //   .where(qwWhere(tablez.pickems, categories, playerId));
-
   const query = await db.query.pickaroos.findMany({
     where: {
       categoryId: { in: categories.map(c => c.id) },
-      ...(playerId != null ? { playerId } : {})
+      ...(playerId != null && { playerId })
     },
-    with: {
-      pickems: true,
-      event: true
-    }
+    with: { pickems: true, event: true }
   });
-
-  // const empty = (k: `${number}:${number}`) => {
-  //   const [viewerId, categoryId] = k.split(':').map(Number);
-  //   return { viewerId, categoryId, attempts: 0, hits: 0, misses: 0 };
-  // };
-  // const buckets = new lbizaMap<`${number}:${number}`, ReturnType<typeof empty>>();
-  // for (const row of rows) {
-  //   const bucket = buckets.getOrCompute(`${row.viewerId}:${row.categoryId}`, empty);
-  //   bucket.attempts++;
-  //   if (row.eventPickable != null) {
-  //     if (row.pickable === row.eventPickable) bucket.hits++;
-  //     else bucket.misses++;
-  //   }
-  // }
-
   return query;
 };
 
@@ -169,7 +140,7 @@ export const scores = async (categories: DB.Infertable['categories'][], playerId
       pickems: { attempts: 0, hits: 0, misses: 0 }
     };
   };
-  const cidbuckets = new lbizaMap<number, {pickaroo:{open:number}}>();
+  const cidbuckets = new lbizaMap<number, { pickaroo: { open: number } }>();
   const buckets = new lbizaMap<`${number}:${number}`, ReturnType<typeof empty>>();
 
   for (const { drafts, events } of fantasyRows) {
@@ -204,7 +175,7 @@ export const scores = async (categories: DB.Infertable['categories'][], playerId
     fantasy.notObservedEvents = matched.size - observed.size;
   }
   for (const pickaroo of pickemRows) {
-    cidbuckets.getOrSet(pickaroo.categoryId, {pickaroo:{open: 0}}).pickaroo.open += pickaroo.event == null ? 1 : 0;
+    cidbuckets.getOrSet(pickaroo.categoryId, { pickaroo: { open: 0 } }).pickaroo.open += pickaroo.event == null ? 1 : 0;
     for (const pickem of pickaroo.pickems) {
       const { pickems } = buckets.getOrCompute(`${pickem.viewerId}:${pickem.categoryId}`, empty);
       pickems.attempts += 1;
@@ -216,5 +187,8 @@ export const scores = async (categories: DB.Infertable['categories'][], playerId
     }
   }
 
-  return {buckets:  [...buckets.values()], cidbuckets: [...cidbuckets].map(([categoryId, {pickaroo}]) => ({ categoryId, pickaroo })) };
+  return {
+    buckets: [...buckets.values()],
+    cidbuckets: [...cidbuckets].map(([categoryId, { pickaroo }]) => ({ categoryId, pickaroo }))
+  };
 };

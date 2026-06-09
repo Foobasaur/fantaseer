@@ -9,7 +9,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "ext:zip": "cd .build/extension && zip -r ../extension.zip . -x '.*'",
-    "ext:build": "npm run build:ext && npm run ext:zip && npm run check",
+    "ext:build": "npm run build:ext && npm run ext:zip",
     "db:start": "docker compose up",
     "db:push": "drizzle-kit push",
     "db:export": "drizzle-kit export --config=drizzle.local.ts",

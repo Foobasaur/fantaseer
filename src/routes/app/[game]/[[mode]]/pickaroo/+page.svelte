@@ -49,6 +49,10 @@ usePubSub({
   'pickems:updated': () => {
     optimisticPick = null;
     invalidate(data.dependz);
+  },
+  '*': e => {
+    if (e.events.includes('pickems:updated')) optimisticPick = null;
+    invalidate(data.dependz);
   }
 });
 </script>
@@ -68,9 +72,7 @@ usePubSub({
             mode: category.mode
           })}>
           <div class="divider my-0"></div>
-          <Stats
-            class={'rounded-t-none'}
-            stats={stated({ hits: pickems.hits, misses: pickems.misses, attempts: pickems.attempts })} />
+          <Stats class={'rounded-t-none'} stats={stated({ hits: pickems.hits, misses: pickems.misses })} />
         </Categorically>
       {:else}{/each}
     </div>

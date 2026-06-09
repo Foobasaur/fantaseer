@@ -10,4 +10,10 @@ export class lbizaMap<K, V> extends Map<K, V> {
      this.set(key, v);
      return v;
    }
+   async getOrAwait(key: K, factory: () => Promise<V>): Promise<V> {
+     if (this.has(key)) return this.get(key)!;
+     const v = await factory();
+     this.set(key, v);
+     return v;
+   }
 }

@@ -1,6 +1,5 @@
 // Hearthstone json API client with CDN URL construction
 import { cached } from '$lib/utilz/fscache';
-import { kMaxLength } from 'buffer';
 import type { Card, ICard, ImgResolution } from '../types';
 import { FormatType, GameTag, GameType } from './enums';
 import { parse } from './xdefs';
@@ -27,7 +26,7 @@ export default async function ({
   }
 } = {}) {
   const [all, collectible] = await Promise.all(
-    [`${api}/cards.json`, `${api}/cards.collectible.json`].map(async url =>
+    [`${api}/cards.json`, `${api}/cards.collectible.json`].map(url =>
       cached(url.split('/').pop()!, async () => {
         const res = await fetch(url);
         const data = (await res.json()) as ICard[];
@@ -37,13 +36,11 @@ export default async function ({
   );
 
   const [Arena, Standard, Wild] = await Promise.all(
-    Object.entries(legal).map(async ([k, v]) =>
-      ['mock', 'extension'].includes(import.meta.env.VITE_TARGET) ?
-        await cached(k, async () => {
-          const res = await fetch(v, { headers: { 'User-Agent': 'HDTPortable/1.0 (Unknown)' } });
-          return (await res.json()) as string[];
-        })
-      : (JSON.parse((await import(`../../../../../../.cache/${k}.json?raw`)).default) as string[])
+    Object.entries(legal).map(([k, v]) =>
+      cached(k, async () => {
+        const res = await fetch(v, { headers: { 'User-Agent': 'HDTPortable/1.0 (Unknown)' } });
+        return (await res.json()) as string[];
+      })
     )
   );
 

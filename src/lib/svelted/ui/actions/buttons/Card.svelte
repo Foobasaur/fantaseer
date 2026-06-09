@@ -1,5 +1,4 @@
 <script lang="ts">
-import { stringz } from '$lib';
 import type { Snippet } from 'svelte';
 import type { ClassValue } from 'svelte/elements';
 
@@ -12,62 +11,67 @@ const props: {
   onclick: () => void;
 } = $props();
 const onclick = () => !props.disabled && props.onclick();
-
-let shineX = $state(50);
-let shineY = $state(50);
 </script>
 
-<div class={['group indicator', props.disabled && 'opacity-50', props.class]}>
-  {#if props.badge}
-    <span class="indicator-item z-1 mt-12 mr-12 p-3 badge badge-sm font-semibold badge-neutral">
-      {#if typeof props.badge === 'string'}{props.badge}{:else}{@render props.badge()}{/if}
-    </span>
-  {/if}
-  <div
-    {onclick}
-    role="button"
-    tabindex="0"
-    onkeydown={e => e.key === 'Enter' && onclick()}
-    class={[!props.disabled && 'hover-glow cursor-pointer', 'relative rounded-2xl']}
-    style:--shine-x="{shineX}%"
-    style:--shine-y="{shineY}%">
-    <figure class={`rounded-2xl ${props.img.w ?? 'w-63'}`}>
-      <img
-        src={props.img.src}
-        alt={props.img.alt ||
-          props.img.src
-            .split('/')
-            .at(-1)
-            ?.replace(/\.\w+$/, '') ||
-          props.img.src}
-        decoding="async"
-        loading="lazy"
-        class={`object-none`} />
-    </figure>
-    <div></div>
-    <div></div>
-    <div></div>
-    <div></div>
-    <div></div>
-    <div></div>
-    <div></div>
-    <div></div>
-  </div>
-  {#if props.overlay}
-    <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
-      {@render props.overlay()}
+<div class="card-cv">
+  <div class="group indicator {props.class}" class:opacity-50={props.disabled}>
+    {#if props.badge}
+      <span class="indicator-item z-1 mt-12 mr-12 p-3 badge badge-sm font-semibold badge-neutral">
+        {#if typeof props.badge === 'string'}{props.badge}{:else}{@render props.badge()}{/if}
+      </span>
+    {/if}
+    <div
+      {onclick}
+      role="button"
+      tabindex="0"
+      onkeydown={e => e.key === 'Enter' && onclick()}
+      class={[!props.disabled && 'hover-glow cursor-pointer', 'relative rounded-2xl']}>
+      <figure class={`rounded-2xl ${props.img.w ?? 'w-63'}`}>
+        <img
+          src={props.img.src}
+          alt={props.img.alt ||
+            props.img.src
+              .split('/')
+              .at(-1)
+              ?.replace(/\.\w+$/, '') ||
+            props.img.src}
+          decoding="async"
+          loading="lazy"
+          class="object-contain" />
+      </figure>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
     </div>
-  {/if}
+    {#if props.overlay}
+      <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+        {@render props.overlay()}
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style>
+.card-cv {
+  content-visibility: auto;
+  contain-intrinsic-size: 316px 424px; /* padded border-box; reserves scroll space */
+  padding: 32px; /* holds the ~24px glow + tilt scale inside paint containment */
+  margin: -32px; /* restores your gap-0 touching layout */
+}
 .hover-glow {
   display: inline-grid;
   perspective: 75rem;
   --transform: 0, 0;
   --ease: linear(0, 0.931 13.8%, 1.196 21.4%, 1.343 29.8%, 1.378 36%, 1.365 43.2%, 1.059 78%, 1);
-  filter: drop-shadow(0 0 0 transparent);
-  transition: filter ease-out 400ms;
+}
+.hover-glow:hover {
+  filter: drop-shadow(0 0 12px rgba(0, 255, 0, 0.6)) drop-shadow(0 0 24px rgba(255, 255, 255, 0.3));
+  transition: filter 400ms ease-out;
 
   > :nth-child(n + 2) {
     isolation: isolate;

@@ -157,6 +157,9 @@ export namespace DB {
     };
   }[keyof TMultiEvent<O>];
 
+  // in the DB namespace
+  type TBatch<T extends Tablekey> = { events: Array<TEventKey<T>>; payload?: any };
+
   /** Extract table name from an event key like 'picks:created'
   type TableFromKey<K extends string> = K extends `${infer T}:${EventAction}` ? T : never;*/
   /** Extract all table keys from an event map type

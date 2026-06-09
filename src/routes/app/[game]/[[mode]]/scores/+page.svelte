@@ -1,5 +1,6 @@
 <script lang="ts">
-import { resolve } from '$app/paths';
+import { invalidate } from '$app/navigation';
+import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
 import { emojiFace, eqludes } from '$lib/utilz/stringz';
@@ -33,6 +34,14 @@ const leaderboard = $derived(totals?.scores.slice(3));
 
 // Format score: numbers ≥1000 become "1.2k". Optional icon prefix for flair.
 const format = (score: number) => (score >= 1000 ? (score / 1000).toFixed(1) + 'k' : score);
+// ── Live updates ────────────────────────────────────────────────────────
+usePubSub({
+  'events:created': _ => invalidate(data.dependz),
+  'pickems:updated': _ => invalidate(data.dependz),
+  'pickaroos:updated': _ => invalidate(data.dependz),
+  'players:updated': _ => invalidate(data.dependz),
+  '*': _ => invalidate(data.dependz)
+});
 </script>
 
 <Header />
@@ -50,7 +59,9 @@ const format = (score: number) => (score >= 1000 ? (score / 1000).toFixed(1) + '
         : entry.rank === 3 ? 'text-7xl w-16 ring-warning'
         : 'text-5xl w-8'
       ]}>
-      {#if false && entry.avatar && !eqludes(entry.avatar, 'user-default-pictures')}<img src={entry.avatar} alt={entry.username} />
+      {#if false && entry.avatar && !eqludes(entry.avatar, 'user-default-pictures')}<img
+          src={entry.avatar}
+          alt={entry.username} />
       {:else}<span>{emojiFace[entry.viewerId % emojiFace.length]}</span>{/if}
     </div>
   </div>
@@ -89,7 +100,7 @@ const format = (score: number) => (score >= 1000 ? (score / 1000).toFixed(1) + '
 {#if !totals?.scores.length}
   <!-- ENHANCEMENT: actionable empty state. Was a dead "be the first" tease;
        now offers a concrete next step when there's a mode in scope. -->
-  <Empty icon="🏟️"  tagline="Supreeeeeememeing..." animate={true} />
+  <Empty icon="🏟️" tagline="Supreeeeeememeing..." animate={true} />
 {:else}
   <div class="page-content">
     <!-- ── Podium (top 3) ──────────────────────────────────────────────

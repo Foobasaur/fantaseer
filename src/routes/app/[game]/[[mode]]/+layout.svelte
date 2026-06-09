@@ -1,21 +1,11 @@
 <script lang="ts">
-import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import { morph } from '$lib';
-import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte.js';
 import { fabio, foobonic } from '$lib/svelted/app';
 
 let { data, params, children } = $props();
 let fabulous = $derived.by(foobonic);
-
-// ── Live updates ────────────────────────────────────────────────────────
-usePubSub({
-  'events:created': _ => invalidate(data.dependz),
-  'pickems:updated': _ => invalidate(data.dependz),
-  'pickaroos:updated': _ => invalidate(data.dependz),
-  'players:updated': _ => invalidate(data.dependz)
-});
 </script>
 
 <svelte:head>

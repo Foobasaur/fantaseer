@@ -1,4 +1,6 @@
 <script lang="ts">
+import { invalidate } from '$app/navigation';
+import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
 import { resolve } from '$app/paths';
 import { fabio } from '$lib/svelted/app';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
@@ -13,8 +15,7 @@ const summary = $derived.by(() => ({
   ],
   pickaroo: [
     { title: 'Hits', value: totals?.pickems.hits },
-    { title: 'Misses', value: totals?.pickems.misses },
-    { title: 'Open', value: totals?.pickaroo?.open },
+    { title: 'Misses', value: totals?.pickems.misses }
   ],
   scores: [
     { title: 'Fantasy', value: totals?.fantasy.picks },
@@ -22,7 +23,14 @@ const summary = $derived.by(() => ({
   ]
 }));
 
-// TODO?: Activity Feed
+// ── Live updates ────────────────────────────────────────────────────────
+usePubSub({
+  'events:created': _ => invalidate(data.dependz),
+  'pickems:updated': _ => invalidate(data.dependz),
+  'pickaroos:updated': _ => invalidate(data.dependz),
+  'players:updated': _ => invalidate(data.dependz),
+  '*': _ => invalidate(data.dependz)
+});
 </script>
 
 <div class="page-content">
