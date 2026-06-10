@@ -8,6 +8,9 @@ const eqstart = (a: string | undefined, b: string, sensitive = false) =>
   sensitive ? a?.startsWith(b) : a?.toLowerCase().startsWith(b.toLowerCase());
 export { eq, eqludes, eqstart, truncate };
 
+// Format score: numbers ≥1000 become "1.2k". Optional icon prefix for flair.
+export const format = (score: number, max = 1000, fix = 'k') => (score >= max ? (score / max).toFixed(1) + fix : score);
+
 export const emojiFace = [
   ...new Intl.Segmenter().segment(
     '😀😁😂🤣😃😄😎😋😊😉😆😅😍😘🥰😗😙🥲🤔🤩🤗🙂☺️😚🫡🤨😐😑😶🫥😮😥😣😏🙄😶‍🌫️🤐' +

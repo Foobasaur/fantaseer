@@ -41,7 +41,7 @@ const overview = $derived.by(() => {
 
 const draft = ({ mode = params.mode, draft = 'new' } = {}) => `/app/${params.game}/${mode}/fantasy/${draft}`;
 
-usePubSub({ '*': e => e.events.includes('events:created') && invalidate(category ? dependz.pickaroo : dependz.app) });
+usePubSub({ '*': _ => category && invalidate(dependz.pickaroo) }, 'events:created');
 </script>
 
 <Header />

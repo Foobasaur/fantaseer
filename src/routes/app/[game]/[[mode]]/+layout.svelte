@@ -9,12 +9,14 @@ import { dependz, fabio, foobonic } from '$lib/svelted/app';
 let { data, params, children } = $props();
 let fabulous = $derived.by(foobonic);
 
-usePubSub({ 'players:updated': _ => invalidate(dependz.app) });
+// ── Live updates ────────────────────────────────────────────────────────
+usePubSub({
+  'players:updated': _ => invalidate(dependz.app),
+  '*': _ => !params.mode && invalidate(dependz.app)
+});
 </script>
 
-<svelte:head>
-  <title>{data.game.name}</title>
-</svelte:head>
+<svelte:head><title>{data.game.name}</title></svelte:head>
 
 {#snippet Header()}
   <!--
@@ -56,7 +58,6 @@ to_top mask, new (30% / 94%):
 {/snippet}
 
 {#snippet Footer()}
-  {@const fabButton = 'btn btn-circle shadow-lg btn-lg btn-neutral'}
   <div class="fab fab-flower">
     <button class="btn btn-circle btn-lg btn-info">
       <span class="drop-shadow-[0_0_3px_rgba(0,0,0,1)] mb-0.5 text-xl">{fabulous.icon}</span>
@@ -65,11 +66,11 @@ to_top mask, new (30% / 94%):
     {#each fabio as { slug, icon, route }}
       <div class="tooltip" data-tip={morph.kappa(slug)}>
         <a
-          class={fabButton}
           href={resolve(route, {
             game: data.game.code,
             mode: page.route.id === route ? undefined : params.mode
-          })}>
+          })}
+          class="btn btn-circle shadow-lg btn-lg btn-neutral">
           <span class="text-xl">{icon}</span>
         </a>
       </div>

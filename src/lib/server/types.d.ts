@@ -122,12 +122,12 @@ export namespace DB {
   // ============================================================================
   // EVENT TYPES
   // ============================================================================
-  export type EventAction = 'created' | 'updated' | 'deleted';
+  type EventAction = 'created' | 'updated' | 'deleted';
 
   /**
    * Payload varies by action
    */
-  export type EventPayload<T extends Tablekey, A extends EventAction, meta> =
+  type EventPayload<T extends Tablekey, A extends EventAction, meta> =
     A extends 'deleted' ? { id: number | string } : Metabled<T, meta>;
 
   /**
@@ -135,10 +135,10 @@ export namespace DB {
    * @template O - Table key
    * @template T - If true, wraps payload in tuple for EventEmitter compatibility
    */
-  export type TEvent<O extends Tablekey, meta = unknown> = {
+  type TEvent<O extends Tablekey, meta = unknown> = {
     [K in EventAction as `${O}:${K}`]: EventPayload<O, K, meta>;
   };
-  export type TEventKey<K extends Tablekey> = keyof TEvent<K>;
+  type TEventKey<K extends Tablekey> = keyof TEvent<K>;
 
   /**
    * Create a combined event map from multiple table keys

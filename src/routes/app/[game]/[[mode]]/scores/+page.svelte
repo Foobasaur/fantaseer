@@ -4,7 +4,7 @@ import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
 import { dependz } from '$lib/svelted/app';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
-import { emojiFace, eqludes } from '$lib/utilz/stringz';
+import { emojiFace, eqludes, format } from '$lib/utilz/stringz';
 
 // ENHANCEMENT: show ↑/↓ when an invalidate-triggered reload shifts ranks.
 // snapshot lives in module scope as a closure variable, not $state — read
@@ -23,7 +23,6 @@ const { totals, previous } = $derived.by(() => {
   if (totals) snapshot = new Map(totals.scores.map(s => [s.viewerId, s.rank]));
   return { totals, previous };
 });
-type Entry = NonNullable<typeof totals>['scores'][number];
 
 // ENHANCEMENT: classic stadium podium order (silver–gold–bronze).
 // The viewer's eye lands on the center first; rank 1 belongs there.
@@ -31,19 +30,14 @@ type Entry = NonNullable<typeof totals>['scores'][number];
 const podium = $derived(totals?.scores && [totals.scores[1], totals.scores[0], totals.scores[2]].filter(Boolean));
 const leaderboard = $derived(totals?.scores.slice(3));
 
-// ── Helpers ─────────────────────────────────────────────────────────────
-
-// Format score: numbers ≥1000 become "1.2k". Optional icon prefix for flair.
-const format = (score: number) => (score >= 1000 ? (score / 1000).toFixed(1) + 'k' : score);
-// ── Live updates ────────────────────────────────────────────────────────
-usePubSub({ '*': _ => invalidate(dependz.app) });
+usePubSub({ '*': _ => params.mode && invalidate(dependz.app) });
 </script>
 
 <Header />
 
 <!-- ── Snippets ────────────────────────────────────────────────────────── -->
 
-{#snippet Avatar(entry: Entry)}
+{#snippet Avatar(entry: { viewerId: number; rank: number; username: string; avatar?: string })}
   <div class="avatar avatar-placeholder">
     <div
       class={[
@@ -64,7 +58,7 @@ usePubSub({ '*': _ => invalidate(dependz.app) });
 
 <!-- ENHANCEMENT: movement indicator. Only renders if the rank actually changed
      since the previous snapshot, so it stays invisible on first load. -->
-{#snippet Username(entry: Entry)}
+{#snippet Username(entry: { viewerId: number; rank: number; username: string })}
   <!-- Positive = moved up since last invalidate, negative = moved down, 0 = same/new. -->
   {@const delta = (prev => (prev ? prev - entry.rank : 0))(previous.get(entry.viewerId))}
   <span class="flex-1 truncate font-medium">
@@ -81,7 +75,7 @@ usePubSub({ '*': _ => invalidate(dependz.app) });
 <!-- ENHANCEMENT: richer tooltip body.
  Tooltip-content overrides the data-tip when daisyUI is set up for
  rich content. Shows full name, score breakdown, and rank context. -->
-{#snippet Breakdown(entry: Entry)}
+{#snippet Breakdown(entry: NonNullable<typeof totals>['scores'][number])}
   <div class="tooltip-content text-left">
     <p class="font-bold">{entry.username}</p>
     {#each [`🏁${entry.fantasy.drafts} ✨${entry.score.engagement} `, ` 🎲${entry.pickems.attempts} ⚡${entry.score.pickems}`] as e}

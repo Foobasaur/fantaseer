@@ -53,7 +53,7 @@ usePubSub({
   },
   '*': e => {
     if (e.events.includes('pickems:updated')) optimisticPick = null;
-    invalidate(dependz.pickaroo);
+    if (category) invalidate(dependz.pickaroo);
   }
 });
 </script>

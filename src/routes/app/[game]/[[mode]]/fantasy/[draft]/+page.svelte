@@ -28,7 +28,7 @@ const overview = $derived.by(() => {
     )
   };
 });
-usePubSub({ '*': e => e.events.includes('events:created') && invalidate(dependz.draft) });
+usePubSub({ '*': _ => invalidate(dependz.draft) }, 'events:created');
 </script>
 
 {#key page.url.pathname}

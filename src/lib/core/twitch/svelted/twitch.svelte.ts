@@ -33,11 +33,19 @@ export const init = async () => {
   }
 };
 
-export const usePubSub = (handlers: {
-  [K in keyof DB.TMultiEvent<DB.Tablekey> | '*']?: K extends '*' ? (batch: DB.TBatch<DB.Tablekey>) => void
-  : (data: DB.TMultiEvent<DB.Tablekey>[Exclude<K, '*'>] | Array<DB.TMultiEvent<DB.Tablekey>[Exclude<K, '*'>]>) => void;
-}) => {
-  const events = Object.entries(handlers).map(([event, handler]) => ({ event, handler: handler as (data: any) => void }));
+export const usePubSub = (
+  handlers: {
+    [K in keyof DB.TMultiEvent<DB.Tablekey> | '*']?: K extends '*' ? (batch: DB.TBatch<DB.Tablekey>) => void
+    : (data: DB.TMultiEvent<DB.Tablekey>[Exclude<K, '*'>] | Array<DB.TMultiEvent<DB.Tablekey>[Exclude<K, '*'>]>) => void;
+  },
+  ...emmits: Array<DB.TEventKey<DB.Tablekey>>
+) => {
+  const events = Object.entries(handlers).map(([event, handler]) => ({
+    event,
+    handler: (data: Parameters<NonNullable<typeof handler>>[0]) =>
+      (!('events' in data) || !emmits.length || emmits.some(n => data.events.includes(n))) &&
+      (handler as (d: typeof data) => void)(data)
+  }));
   onMount(() => {
     events.forEach(({ event, handler }) => Twitch.I.on(event, handler));
     return () => events.forEach(({ event, handler }) => Twitch.I.off(event, handler));

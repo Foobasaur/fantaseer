@@ -1,60 +1,52 @@
 <script lang="ts">
-import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
-import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
-import { dependz, fabio } from '$lib/svelted/app';
+import { fabio } from '$lib/svelted/app';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
 
 let { data, params } = $props();
-
-const totals = $derived(data.totals.find(t => t.category?.mode === params.mode));
-const summary = $derived.by(() => ({
-  fantasy: [
-    { title: 'Drafts', value: totals?.fantasy.drafts },
-    { title: 'Ratings', value: totals?.fantasy.eventables.reduce((n, e) => n + e.events, 0) }
-  ],
-  pickaroo: [
-    { title: 'Hits', value: totals?.pickems.hits },
-    { title: 'Misses', value: totals?.pickems.misses }
-  ],
-  scores: [
-    { title: 'Fantasy', value: totals?.fantasy.picks },
-    { title: 'Pickaroo', value: totals?.pickems.attempts }
-  ]
-}));
-
-// ── Live updates ────────────────────────────────────────────────────────
-usePubSub({ '*': _ => invalidate(dependz.app) });
+const summary = $derived.by(() => {
+  const totals = data.totals.find(t => t.category?.mode === params.mode);
+  return {
+    totals: { top3: totals?.scores.slice(0, 3) },
+    fantasy: [
+      ['Drafts', totals?.fantasy.drafts],
+      ['Ratings', totals?.fantasy.eventables.reduce((n, e) => n + e.events, 0)]
+    ],
+    pickaroo: [
+      ['Hits', totals?.pickems.hits],
+      ['Misses', totals?.pickems.misses]
+    ],
+    scores: [
+      ['Fantasy', totals?.fantasy.picks],
+      ['Pickaroo', totals?.pickems.attempts]
+    ]
+  };
+});
 </script>
+
+{#snippet Top3()}
+  <div class="divider my-2"></div>
+  <div class="mt-2 space-y-1">
+    {#each summary.totals.top3 as entry (entry.username)}
+      <div class="flex items-center gap-2 text-sm">
+        <span class="font-bold opacity-60">#{entry.rank}</span>
+        <span class="flex-1">{entry.username}</span>
+        <span class="font-semibold">{entry.score.weighted}</span>
+      </div>
+    {/each}
+  </div>
+{/snippet}
 
 <div class="page-content">
   <div class="grid gap-4 md:grid-cols-3">
-    {#each fabio.slice(1) as { icon, tagline, slug }}
-      {@const stats = summary[slug as keyof typeof summary]}
+    {#each (([, ...c]) => c)(fabio) as { icon, tagline, slug: title, route } (title)}
       <Categorically
-        title={slug}
-        {tagline}
+        {title}
         {icon}
-        {stats}
-        href={slug === 'home' ?
-          resolve('/app/[game]', { game: params.game })
-        : resolve(`/app/[game]/[[mode]]/${slug}`, { game: params.game, mode: params.mode })}>
-        {#snippet children()}
-          {@const topScores = slug === 'scores' ? totals?.scores.slice(0, 3) : null}
-          {#if topScores?.length}
-            <div class="divider my-2"></div>
-            <div class="mt-2 space-y-1">
-              {#each topScores as entry (entry.username)}
-                <div class="flex items-center gap-2 text-sm">
-                  <span class="font-bold opacity-60">#{entry.rank}</span>
-                  <span class="flex-1">{entry.username}</span>
-                  <span class="font-semibold">{entry.score.weighted}</span>
-                </div>
-              {/each}
-            </div>
-          {/if}
-        {/snippet}
-      </Categorically>
+        {tagline}
+        href={resolve(route, { game: params.game, mode: params.mode })}
+        stats={summary[title].map(([title, value]) => ({ title, value }))}
+        children={title === 'scores' && summary.totals.top3?.length ? Top3 : undefined} />
     {/each}
   </div>
 </div>

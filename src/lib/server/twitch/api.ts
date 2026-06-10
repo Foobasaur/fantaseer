@@ -10,10 +10,8 @@ import { error } from '@sveltejs/kit';
 // } = await helix<TT.Helix.User>('users');
 export const helix = async <T>(init?: RequestInit & { endpoint?: string; search?: URLSearchParams }) => {
   const { fetch, request, url, params } = getRequestEvent();
-  const endpoint = init?.endpoint || params.endpoint;
-  const search = init?.search || url.searchParams;
+  const { endpoint = params.endpoint, search = url.searchParams } = init || {};
   const origin = request.headers.get('mock') ? 'http://localhost:8080/mock' : 'https://api.twitch.tv/helix';
-
   const reply = await fetch(`${origin}/${endpoint}?${search}`, {
     ...init,
     headers: {
