@@ -1,6 +1,7 @@
 <script lang="ts">
 import { invalidate } from '$app/navigation';
 import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
+import { dependz } from '$lib/svelted/app';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
 import { emojiFace, eqludes } from '$lib/utilz/stringz';
@@ -35,13 +36,7 @@ const leaderboard = $derived(totals?.scores.slice(3));
 // Format score: numbers ≥1000 become "1.2k". Optional icon prefix for flair.
 const format = (score: number) => (score >= 1000 ? (score / 1000).toFixed(1) + 'k' : score);
 // ── Live updates ────────────────────────────────────────────────────────
-usePubSub({
-  'events:created': _ => invalidate(data.dependz),
-  'pickems:updated': _ => invalidate(data.dependz),
-  'pickaroos:updated': _ => invalidate(data.dependz),
-  'players:updated': _ => invalidate(data.dependz),
-  '*': _ => invalidate(data.dependz)
-});
+usePubSub({ '*': _ => invalidate(dependz.app) });
 </script>
 
 <Header />

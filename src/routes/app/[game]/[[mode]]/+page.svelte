@@ -1,8 +1,8 @@
 <script lang="ts">
 import { invalidate } from '$app/navigation';
-import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
 import { resolve } from '$app/paths';
-import { fabio } from '$lib/svelted/app';
+import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
+import { dependz, fabio } from '$lib/svelted/app';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
 
 let { data, params } = $props();
@@ -24,13 +24,7 @@ const summary = $derived.by(() => ({
 }));
 
 // ── Live updates ────────────────────────────────────────────────────────
-usePubSub({
-  'events:created': _ => invalidate(data.dependz),
-  'pickems:updated': _ => invalidate(data.dependz),
-  'pickaroos:updated': _ => invalidate(data.dependz),
-  'players:updated': _ => invalidate(data.dependz),
-  '*': _ => invalidate(data.dependz)
-});
+usePubSub({ '*': _ => invalidate(dependz.app) });
 </script>
 
 <div class="page-content">

@@ -5,6 +5,7 @@ import { gg } from '$lib/core/games/games';
 import DraftedView from '$lib/core/games/HS/features/fantasy/draft/svelted/ui/Deck.svelte';
 import DraftView from '$lib/core/games/HS/features/fantasy/draft/svelted/ui/Draft.svelte';
 import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte.js';
+import { dependz } from '$lib/svelted/app';
 import ebs from '$lib/svelted/ebs';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
@@ -27,7 +28,7 @@ const overview = $derived.by(() => {
     )
   };
 });
-usePubSub({ 'events:created': _ => invalidate(data.dependz) });
+usePubSub({ '*': e => e.events.includes('events:created') && invalidate(dependz.draft) });
 </script>
 
 {#key page.url.pathname}

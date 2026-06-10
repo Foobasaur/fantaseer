@@ -1,6 +1,13 @@
 import { page } from '$app/state';
 import { morph } from '$lib';
 
+export const dependz = {
+  app: 'app:layout:load',
+  fantasy: 'ebs:fantasy:get',
+  draft: 'ebs:draft:get',
+  pickaroo: 'ebs:pickaroo:get'
+} as const;
+
 export const fabio = [
   { route: '/app/[game]/[[mode]]', slug: 'home', icon: '🕹️', tagline: 'Fantaseer' },
   { route: '/app/[game]/[[mode]]/fantasy', slug: 'fantasy', icon: '✨', tagline: 'Draft `em' },

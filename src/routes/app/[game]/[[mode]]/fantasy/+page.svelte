@@ -2,7 +2,8 @@
 import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { gg, stats } from '$lib/core/games/games';
-import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte.js';
+import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
+import { dependz } from '$lib/svelted/app';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
@@ -38,10 +39,9 @@ const overview = $derived.by(() => {
   };
 });
 
-const draft = ({ mode = params.mode, draft = 'new' } = {}) =>
-  resolve('/app/[game]/[[mode]]/fantasy/[draft]', { game: params.game, mode, draft });
+const draft = ({ mode = params.mode, draft = 'new' } = {}) => `/app/${params.game}/${mode}/fantasy/${draft}`;
 
-usePubSub({ 'events:created': _ => invalidate(data.dependz) });
+usePubSub({ '*': e => e.events.includes('events:created') && invalidate(category ? dependz.pickaroo : dependz.app) });
 </script>
 
 <Header />
@@ -101,7 +101,7 @@ usePubSub({ 'events:created': _ => invalidate(data.dependz) });
       {/each}
     </div>
   {:else}
-    <Empty icon='🔮' tagline="Fantaseeeeeering......" animate={true}>
+    <Empty icon="🔮" tagline="Fantaseeeeeering......" animate={true}>
       {#if params.mode && data.player}<a class="btn my-3 btn-primary" href={draft()}>New Draft</a>{/if}
     </Empty>
   {/if}

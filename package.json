@@ -24,7 +24,7 @@
     "db:sst:studio": "sst shell drizzle-kit studio",
     "db:pull": "sst shell drizzle-kit pull",
     "dev": "node --inspect=9229 node_modules/.bin/vite dev",
-    "dev:bang": "DATABASE_URL=postgres://root:mysecretpassword@localhost:5433/local VITE_TARGET=mock vite dev",
+    "dev:bang": "VITE_TARGET=mock vite dev",
     "dev:pre": "SST_DEBUG=true npx sst deploy --stage pre",
     "prepare": "svelte-kit sync || echo ''",
     "preview": "vite preview",

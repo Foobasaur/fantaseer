@@ -1,12 +1,12 @@
+import { dependz } from '$lib/svelted/app';
 import ebs from '$lib/svelted/ebs';
+import { lbizaMap } from '$lib/utilz/lbizaMap';
 import { sumScalars } from '$lib/utilz/morph';
 import type { Server } from '@';
 import type { LayoutLoad } from './$types';
-import { lbizaMap } from '$lib/utilz/lbizaMap';
 
-const dependz = 'app:layout:load';
 export const load = async ({ fetch, depends, untrack, params }: Parameters<LayoutLoad>[0]) => {
-  depends(dependz);
+  depends(dependz.app);
   const mode = untrack(() => params.mode);
   const data = await ebs({ fetch, path: `/app/${params.game}${mode ? `/${mode}` : ''}` }).get<Server.EBS.Game>();
   const empty = () => ({
@@ -46,5 +46,5 @@ export const load = async ({ fetch, depends, untrack, params }: Parameters<Layou
       .map((row, i) => ({ ...row, rank: i + 1 }))
   }));
 
-  return { ...data, dependz, totals };
+  return { ...data, totals };
 };

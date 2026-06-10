@@ -1,11 +1,15 @@
 <script lang="ts">
+import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import { morph } from '$lib';
-import { fabio, foobonic } from '$lib/svelted/app';
+import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
+import { dependz, fabio, foobonic } from '$lib/svelted/app';
 
 let { data, params, children } = $props();
 let fabulous = $derived.by(foobonic);
+
+usePubSub({ 'players:updated': _ => invalidate(dependz.app) });
 </script>
 
 <svelte:head>

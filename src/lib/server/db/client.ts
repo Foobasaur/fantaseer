@@ -1,18 +1,19 @@
 import { Resource } from 'sst';
 import { defineRelations } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
+import { env } from '$env/dynamic/private';
 import * as tables from './.sql/tables';
 
 export const tablez = { ...tables } as const;
 
 export const db = drizzle({
-  connection: process.env.DATABASE_URL ?? {
+  connection: (process.env.VITE_TARGET && (process.env.DATABASE_URL || env.DATABASE_URL)) ?? {
+    ssl: false,
     host: Resource.MyPostgres.host,
     port: Resource.MyPostgres.port,
     user: Resource.MyPostgres.username,
     password: Resource.MyPostgres.password,
-    database: Resource.MyPostgres.database,
-    ssl: false
+    database: Resource.MyPostgres.database
   },
   relations: defineRelations(tables, r => ({
     games: {

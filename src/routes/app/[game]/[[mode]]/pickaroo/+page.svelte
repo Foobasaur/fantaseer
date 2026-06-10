@@ -3,6 +3,7 @@ import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import Pickems from '$lib/core/games/HS/features/pickaroo/svelted/ui/Pickems.svelte';
 import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte.js';
+import { dependz } from '$lib/svelted/app';
 import ebs from '$lib/svelted/ebs';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
@@ -45,14 +46,14 @@ const stated = ({ attempts = -1, hits = -1, misses = -1 }) =>
   ].filter(s => s.value > -1) as Stat[];
 
 usePubSub({
-  'pickaroos:updated': () => invalidate(data.dependz),
+  'pickaroos:updated': () => invalidate(dependz.pickaroo),
   'pickems:updated': () => {
     optimisticPick = null;
-    invalidate(data.dependz);
+    invalidate(dependz.pickaroo);
   },
   '*': e => {
     if (e.events.includes('pickems:updated')) optimisticPick = null;
-    invalidate(data.dependz);
+    invalidate(dependz.pickaroo);
   }
 });
 </script>

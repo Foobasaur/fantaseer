@@ -66,7 +66,7 @@ export const game = async () => {
       );
       return { ...s, score: { engagement, pickems, weighted: engagement + pickems } };
     })
-  }))(player && (await scores(categories, import.meta.env.VITE_TARGET === 'extension' ? player.id : undefined)));
+  }))(player && (await scores(categories, player.id)));
   return { player, game, categories, summaries: { viewer: rows.summaries, catigory: rows.cidbuckets } };
 };
 

@@ -17,7 +17,6 @@ const authHander = async () => {
 };
 
 export const init = async () => {
-  if (!import.meta.env.VITE_TARGET) throw new Error('VITE_TARGET Not Set'); // only initialize in extension context
   try {
     await waitFor(() => [Twitch.I.auth, Twitch.I.ctx, Twitch.I.viewer].every(Boolean), {
       step: 300,
