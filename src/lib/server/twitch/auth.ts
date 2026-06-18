@@ -126,7 +126,7 @@ export const oauth = () => {
       pending.set(tokens.nonce, tokens); // Store tokens in-memory keyed by nonce
       event.cookies.delete(key, { path });
       await delay(600); // Ensure client receives pending status before polling succeeds
-      return resolve('/web');
+      return resolve('/web/authed');
     },
     async refresh() {
       // ── Resolve refresh_token: body takes priority over cookie ───────────────
