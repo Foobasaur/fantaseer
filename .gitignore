@@ -30,3 +30,6 @@ vite.config.ts.timestamp-*
 
 # sst
 .sst
+
+# AI copilot
+.claude

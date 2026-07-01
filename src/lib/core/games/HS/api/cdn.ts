@@ -26,9 +26,9 @@ export default async function ({
   }
 } = {}) {
   const [all, collectible] = await Promise.all(
-    [`${api}/cards.json`, `${api}/cards.collectible.json`].map(url =>
+    [`${api}/cards`, `${api}/cards.collectible`].map(url =>
       cached(url.split('/').pop()!, async () => {
-        const res = await fetch(url);
+        const res = await fetch(url + '.json');
         const data = (await res.json()) as ICard[];
         return data.map(card => ({ ...card, img: art(card.id) }));
       })
@@ -44,28 +44,25 @@ export default async function ({
     )
   );
 
-  const Battlegrounds =
-    ['mock', 'extension'].includes(import.meta.env.VITE_TARGET) ?
-      await cached('battlegrounds', async () => {
-        const res = await fetch(xdefs);
-        const defs = parse(await res.text(), [
-          GameTag.BACON_HERO_CAN_BE_DRAFTED,
-          GameTag.BACON_TIMEWARPED,
-          GameTag.IS_BACON_POOL_MINION,
-          GameTag.IS_BACON_POOL_SPELL
-        ]);
-        return defs.entities.map(e => e.cardID);
-      })
-    : await (async () => {
-        const { default: raw } = await import('../../../../../../.cache/battlegrounds.json?raw');
-        return JSON.parse(raw) as string[];
-      })();
-
-  const cards = [...collectible, ...all].reduce((acc, card) => {
-    const tail = card.id.split('_').pop() ?? '';
-    if (/^\d+$/.test(tail) && !acc.some(c => card.id.startsWith(c.id))) acc.push(card);
-    return acc;
-  }, [] as Card[]);
-
-  return { cards, Battlegrounds, Arena, Standard, Wild };
+  const Battlegrounds = await cached('battlegrounds', async () => {
+    const res = await fetch(xdefs);
+    const defs = parse(await res.text(), [
+      GameTag.BACON_HERO_CAN_BE_DRAFTED,
+      GameTag.BACON_TIMEWARPED,
+      GameTag.IS_BACON_POOL_MINION,
+      GameTag.IS_BACON_POOL_SPELL
+    ]);
+    return defs.entities.map(e => e.cardID);
+  });
+  return {
+    Wild,
+    Arena,
+    Standard,
+    Battlegrounds,
+    cards: [...collectible, ...all].reduce((acc, card) => {
+      const tail = card.id.split('_').pop() ?? '';
+      if (/^\d+$/.test(tail) && !acc.some(c => card.id.startsWith(c.id))) acc.push(card);
+      return acc;
+    }, [] as Card[])
+  };
 }
