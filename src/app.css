@@ -18,7 +18,7 @@
    each element since group-* variants target that class name directly, not whatever
    this utility expands to */
 @utility cta-pill {
-  @apply inline-flex items-center rounded-xl p-3 font-semibold transition duration-300 ease-out hover:-translate-y-0.5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-[#0c0418] motion-reduce:transition-none;
+  @apply inline-flex items-center rounded-xl p-3 font-semibold transition duration-300 ease-out hover:-translate-y-0.5 has-focus-visible:ring-2 has-focus-visible:ring-offset-2 has-focus-visible:ring-offset-[#0c0418] motion-reduce:transition-none;
 }
 
 /* the two "ghost" (outlined) CTA buttons, layered on top of cta-pill */
