@@ -28,7 +28,10 @@
     "dev:pre": "SST_DEBUG=true npx sst deploy --stage pre",
     "prepare": "svelte-kit sync || echo ''",
     "preview": "vite preview",
-    "test:seed": "SKIP_SETUP=1 vitest run tests/seed/all"
+    "test:seed": "SKIP_SETUP=1 vitest run tests/seed/all",
+    "db:populate": "vitest run tests/live/populate",
+    "db:populate:dry": "SEED_DRY=1 vitest run tests/live/populate",
+    "db:populate:purge": "SEED_PURGE=only vitest run tests/live/populate"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^7.0.1",

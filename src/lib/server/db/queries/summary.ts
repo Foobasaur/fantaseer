@@ -3,6 +3,7 @@ import { lbizaMap } from '$lib/utilz/lbizaMap';
 import type { DB } from '@';
 import { and, type AnyColumn, eq, inArray, notExists, sql } from 'drizzle-orm';
 import { $get } from '../kit';
+import { truncate } from '$lib/utilz/stringz';
 
 // ============================================================
 // SQL Fragment Builders
@@ -127,7 +128,7 @@ export const scores = async (categories: DB.Infertable['categories'][], playerId
     return {
       viewerId,
       categoryId,
-      username: viewer?.meta?.username || `Viewer ${viewerId}`,
+      username: (viewer?.meta?.username && truncate(viewer?.meta?.username)) || `Viewer ${viewerId}`,
       avatar: viewer?.meta?.avatar,
       fantasy: {
         drafts: 0,

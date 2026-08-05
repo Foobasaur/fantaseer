@@ -1,4 +1,4 @@
-const truncate = (text: string, length: number, ellipsis = '...') =>
+const truncate = (text: string, length = 9, ellipsis = '...') =>
   text.length > length ? text.slice(0, length - ellipsis.length) + ellipsis : text;
 const eq = (a: string | undefined, b: string, sensitive = false) =>
   sensitive ? a === b : a?.toLowerCase() === b.toLowerCase();
