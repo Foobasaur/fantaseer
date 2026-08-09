@@ -1,6 +1,6 @@
 name: sync-public-mirror
 on:
-  push: { branches: [main] }
+  push: { branches: [main, 0.0.2] }
   workflow_dispatch:
 concurrency: { group: mirror-sync, cancel-in-progress: true }
 jobs:
@@ -18,4 +18,4 @@ jobs:
         # if the image's CLI has drifted, fix flags per --help; the gate itself is non-negotiable
       - run: |
           git remote add mirror "https://x-access-token:${{ secrets.MIRROR_TOKEN }}@github.com/Foobasaur/fantaseer-public.git"
-          git push --force mirror main
+          git push --force mirror main 0.0.2
