@@ -1,7 +1,7 @@
 import { resolve } from '$app/paths';
 import ebs from '$lib/svelted/ebs';
 import { waitFor } from '$lib/utilz/polly';
-import type { DB, Twitch as TT } from '@';
+import type { Server, Twitch as TT } from '@';
 import { onMount } from 'svelte';
 import { Twitch } from './services/Extension.svelte';
 
@@ -24,7 +24,7 @@ export const init = async () => {
     });
     await authHander();
     console.log('Twitch Extension Init:', Twitch.I.auth, Twitch.I.ctx, Twitch.I.viewer, Twitch.I.helixer);
-    Twitch.I.pubsub?.onBroadcast<DB.FeedEntry<DB.Tablekey> | DB.TBatch<DB.Tablekey>>(async msg => {
+    Twitch.I.pubsub?.onBroadcast<Server.DB.FeedEntry<Server.DB.Tablekey> | Server.DB.TBatch<Server.DB.Tablekey>>(async msg => {
       if (msg.data && 'events' in msg.data) Twitch.I.emit('*', msg.data);
       else if (msg.data) Twitch.I.emit(msg.data.event, { payload: msg.data.payload, values: msg.data.values });
     });
@@ -35,10 +35,10 @@ export const init = async () => {
 
 export const usePubSub = (
   handlers: {
-    [K in keyof DB.TMultiEvent<DB.Tablekey> | '*']?: K extends '*' ? (batch: DB.TBatch<DB.Tablekey>) => void
-    : (data: DB.TMultiEvent<DB.Tablekey>[Exclude<K, '*'>] | Array<DB.TMultiEvent<DB.Tablekey>[Exclude<K, '*'>]>) => void;
+    [K in keyof Server.DB.TMultiEvent<Server.DB.Tablekey> | '*']?: K extends '*' ? (batch: Server.DB.TBatch<Server.DB.Tablekey>) => void
+    : (data: Server.DB.TMultiEvent<Server.DB.Tablekey>[Exclude<K, '*'>] | Array<Server.DB.TMultiEvent<Server.DB.Tablekey>[Exclude<K, '*'>]>) => void;
   },
-  ...emmits: Array<DB.TEventKey<DB.Tablekey>>
+  ...emmits: Array<Server.DB.TEventKey<Server.DB.Tablekey>>
 ) => {
   const events = Object.entries(handlers).map(([event, handler]) => ({
     event,

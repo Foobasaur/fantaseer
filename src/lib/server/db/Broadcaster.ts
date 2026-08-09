@@ -1,11 +1,11 @@
-import type { DB } from '@';
+import type { Server } from '@';
 import { error } from '@sveltejs/kit';
 import { $insert } from './kit';
 
-export class BroadcastLedger<T extends DB.Tablekey> {
+export class BroadcastLedger<T extends Server.DB.Tablekey> {
   private cleanuper: ReturnType<typeof setInterval>;
-  private pending = new Map<string, DB.Infertable[T] & { expiresAt: number }>();
-  private prepared = new Map<DB.Tablekey, DB.Infertable<'Insert'>[DB.Tablekey][]>();
+  private pending = new Map<string, Server.DB.Infertable[T] & { expiresAt: number }>();
+  private prepared = new Map<Server.DB.Tablekey, Server.DB.Infertable<'Insert'>[Server.DB.Tablekey][]>();
 
   constructor() {
     this.cleanuper = setInterval(() => this.sweep(), 60_000);
@@ -22,7 +22,7 @@ export class BroadcastLedger<T extends DB.Tablekey> {
     this.prepared.clear();
   }
 
-  register(event: DB.Infertable[T]) {
+  register(event: Server.DB.Infertable[T]) {
     const nonce = crypto.randomUUID();
     this.pending.set(nonce, { ...event, expiresAt: Date.now() + 30_000 });
     return nonce;
@@ -38,7 +38,7 @@ export class BroadcastLedger<T extends DB.Tablekey> {
     return entry;
   }
 
-  prepare<K extends DB.Tablekey>(key: K, value: DB.Infertable<'Insert'>[K]) {
+  prepare<K extends Server.DB.Tablekey>(key: K, value: Server.DB.Infertable<'Insert'>[K]) {
     this.prepared.set(key, [...(this.prepared.get(key) || []), value]);
   }
 

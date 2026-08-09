@@ -22,7 +22,7 @@
 // ============================================
 
 import { env } from '$env/dynamic/private';
-import type { DB, Twitch } from '@';
+import type { Server, Twitch } from '@';
 import { error } from '@sveltejs/kit';
 import { createHmac } from 'node:crypto';
 
@@ -143,9 +143,9 @@ export class PubSubServer {
    * await pub.broadcast({ channelId, message: { event: 'test:u', payload: { poo: 'doo' } } });
    * ```
    */
-  broadcast = async <T extends DB.Tablekey | (unknown & {}) = any>(
+  broadcast = async <T extends Server.DB.Tablekey | (unknown & {}) = any>(
     channelId: string,
-    message: T extends DB.Tablekey ? DB.FeedEntry<T> : T
+    message: T extends Server.DB.Tablekey ? Server.DB.FeedEntry<T> : T
   ) => this.send('broadcast', channelId, message);
 
   /**

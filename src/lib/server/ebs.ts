@@ -1,7 +1,7 @@
 import { getRequestEvent } from '$app/server';
 import { gg } from '$lib/core/games/games.server';
 import { timer, timez } from '$lib/utilz/morph';
-import type { DB, Server, Twitch } from '@';
+import type { Server, Twitch } from '@';
 import { error } from '@sveltejs/kit';
 import { and, eq, getColumns } from 'drizzle-orm';
 import { db, tablez } from './db/client';
@@ -75,11 +75,11 @@ export const draft = async () => {
   const { user, module, category, player } = await e.model();
 
   const TIME_BETWEEN_DRAFTS = timez.hour(12);
-  const nexty = (drafts: DB.Infertable['drafts'][]) => {
+  const nexty = (drafts: Server.DB.Infertable['drafts'][]) => {
     const open = drafts.find(e => e.createdAt.getTime() + TIME_BETWEEN_DRAFTS > Date.now());
     return open && timer(open.createdAt, TIME_BETWEEN_DRAFTS);
   };
-  const eventy = async (opts: XOR<{ categoryId: DB.ColumnCondition<number> }, { id: DB.ColumnCondition<number> }>) => {
+  const eventy = async (opts: XOR<{ categoryId: Server.DB.ColumnCondition<number> }, { id: Server.DB.ColumnCondition<number> }>) => {
     const { categoryId = ['isNotNull'], id = ['isNotNull'] } = opts;
     const drafts = player && (await $get('drafts')({ where: { id, playerId: player.id, viewerId: user.id, categoryId } }));
     const picks = drafts && (await $get('picks')({ where: { draftId: ['inArray', drafts.map(d => d.id)] } }));

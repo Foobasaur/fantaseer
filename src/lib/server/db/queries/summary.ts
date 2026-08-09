@@ -1,6 +1,6 @@
 import { db, tablez } from '$lib/server/db/client';
 import { lbizaMap } from '$lib/utilz/lbizaMap';
-import type { DB } from '@';
+import type { Server } from '@';
 import { and, type AnyColumn, eq, inArray, notExists, sql } from 'drizzle-orm';
 import { $get } from '../kit';
 import { truncate } from '$lib/utilz/stringz';
@@ -11,12 +11,12 @@ import { truncate } from '$lib/utilz/stringz';
 
 const sqlCount = (column: AnyColumn) => sql<number>`COUNT(DISTINCT ${column})::int`;
 const sqlPlayer = (column: AnyColumn, playerId?: number) => (playerId != null ? eq(column, playerId) : undefined);
-const sqlCategories = (column: AnyColumn, categories: DB.Infertable['categories'][]) =>
+const sqlCategories = (column: AnyColumn, categories: Server.DB.Infertable['categories'][]) =>
   inArray(
     column,
     categories.map(c => c.id)
   );
-const qwWhere = (table: DB.Tables['drafts' | 'pickems'], categories: DB.Infertable['categories'][], playerId?: number) =>
+const qwWhere = (table: Server.DB.Tables['drafts' | 'pickems'], categories: Server.DB.Infertable['categories'][], playerId?: number) =>
   and(
     sqlPlayer(table.playerId, playerId),
     sqlCategories(table.categoryId, categories),
@@ -33,7 +33,7 @@ const qwWhere = (table: DB.Tables['drafts' | 'pickems'], categories: DB.Infertab
 // ============================================================
 
 /** Get aggregated engagement summary across categories */
-export const fantasy = async (categories: DB.Infertable['categories'][], playerId?: number) => {
+export const fantasy = async (categories: Server.DB.Infertable['categories'][], playerId?: number) => {
   // ── Step 1: drafts + nested picks via RQB
   const drafts = await db.query.drafts.findMany({
     where: {
@@ -103,7 +103,7 @@ export const fantasy = async (categories: DB.Infertable['categories'][], playerI
 };
 
 /** Get aggregated pickems summary across categories */
-export const pickems = async (categories: DB.Infertable['categories'][], playerId?: number) => {
+export const pickems = async (categories: Server.DB.Infertable['categories'][], playerId?: number) => {
   const query = await db.query.pickaroos.findMany({
     where: {
       categoryId: { in: categories.map(c => c.id) },
@@ -115,11 +115,11 @@ export const pickems = async (categories: DB.Infertable['categories'][], playerI
 };
 
 /** Get aggregated per-(viewer, category) raw counts scoped to a player */
-export const scores = async (categories: DB.Infertable['categories'][], playerId?: number) => {
+export const scores = async (categories: Server.DB.Infertable['categories'][], playerId?: number) => {
   const [fantasyRows, pickemRows, viewerRows] = await Promise.all([
     fantasy(categories, playerId),
     pickems(categories, playerId),
-    $get('viewers')<DB.Viewer['meta']>().then(rows => new Map(rows.map(v => [v.id, v] as const)))
+    $get('viewers')<Server.DB.Viewer['meta']>().then(rows => new Map(rows.map(v => [v.id, v] as const)))
   ]);
 
   const empty = (k: `${number}:${number}`) => {
@@ -128,7 +128,7 @@ export const scores = async (categories: DB.Infertable['categories'][], playerId
     return {
       viewerId,
       categoryId,
-      username: (viewer?.meta?.username && truncate(viewer?.meta?.username)) || `Viewer ${viewerId}`,
+      username: viewer?.meta?.username || `Viewer ${viewerId}`,
       avatar: viewer?.meta?.avatar,
       fantasy: {
         drafts: 0,

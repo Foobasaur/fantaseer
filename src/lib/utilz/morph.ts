@@ -14,6 +14,8 @@ export const checker = <T>(eq1: T | T[], eq2: T | T[], prefix = PREFIXER) => {
   return Arrg(eq2).some(e => set.has(e));
 };
 
+export const identify = <T>(x: T): T => x;
+
 export const blobby = (o: object) => {
   const imgs = Object.entries(o).reduce(
     (acc, [path, module]) => {

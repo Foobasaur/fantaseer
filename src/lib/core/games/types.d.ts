@@ -7,7 +7,7 @@
  * Games implement this directly with their CDN types.
  * No transformation layer - CDN JSON IS the entity type.
  */
-import type { CODES, DB, Game } from '@';
+import type { CODES, Game } from '@';
 export namespace Game {
   // Game codes
   type Code = (typeof CODES)[number];

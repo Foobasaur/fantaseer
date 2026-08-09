@@ -13,7 +13,7 @@ import {
   SEED_CONFIG
 } from '../helpers/seed';
 import { db } from '../setup';
-import type { DB } from '@';
+import type { Server } from '@';
 import { assert, beforeAll, describe, it } from 'vitest';
 
 // ============================================================
@@ -25,10 +25,10 @@ describe('Full Seed Pipeline', () => {
   let categoryMap: Map<number, CategoryEntry>;
   let viewerProfiles: ViewerProfileEntry[];
   let playerMap: Map<number, PlayerEntry[]>;
-  let eventMap: Map<number, DB.Infertable['events'][]>;
-  let draftMapping: Map<number, DB.Infertable['drafts'][]>;
-  let pickMapping: Map<number, DB.Infertable['picks'][]>;
-  let observerMap: Map<number, DB.Infertable['observers'][]>;
+  let eventMap: Map<number, Server.DB.Infertable['events'][]>;
+  let draftMapping: Map<number, Server.DB.Infertable['drafts'][]>;
+  let pickMapping: Map<number, Server.DB.Infertable['picks'][]>;
+  let observerMap: Map<number, Server.DB.Infertable['observers'][]>;
   let pickables: Map<string, string[]>;
 
   beforeAll(async () => {

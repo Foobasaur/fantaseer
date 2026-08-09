@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Card } from '$lib/core/games/HS/types';
-import type { DB, FantasyDraftPageData as PageData } from '@';
+import type { FantasyDraftPageData as PageData, Server } from '@';
 
 import { checker, PREFIXER } from '$lib/utilz/morph';
 import { eqludes } from '$lib/utilz/stringz';
@@ -22,7 +22,7 @@ import { page } from '$app/state';
 type Store = ReturnType<typeof create>;
 let { data, submit }: { data: PageData; submit: (store: Store) => void } = $props();
 
-let category = $state<DB.Infertable['categories']>();
+let category = $state<Server.DB.Infertable['categories']>();
 let store = $state<Store>();
 let search = $state('');
 
