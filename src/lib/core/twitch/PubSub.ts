@@ -37,7 +37,7 @@ type ListenerCallback = (target: string, contentType: string, message: string) =
 /**
  * PubSubClient class for managing Twitch PubSub subscriptions and messages in the browser.
  */
-export class PubSubClient {
+export class PubSub {
   private listeners = new Map<string, ListenerCallback>();
   constructor(
     private config?: {

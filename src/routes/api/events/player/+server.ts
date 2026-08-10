@@ -3,7 +3,7 @@ import { $insert } from '$lib/server/db/kit';
 import { Viewer } from '$lib/server/db/queries/identity';
 import { chatters } from '$lib/server/twitch/api';
 import { authenticate } from '$lib/server/twitch/auth';
-import { PubSubServer } from '$lib/server/twitch/PubSubServer';
+import { PubSub } from '$lib/server/twitch/PubSub';
 import { catchy } from '$lib/utilz/polly';
 import type { Server } from '@';
 import { error } from '@sveltejs/kit';
@@ -153,6 +153,6 @@ export const POST: RequestHandler = ({ request, url }) =>
       if (observers && observers.length) evented['observers:created'] = observers;
     }
     console.log('Evented:', inspect({ evented }, { depth: null, colors: true }));
-    return await PubSubServer.I.broadcast(player.platformId, { events: Object.keys(evented) });
+    return await PubSub.I.broadcast(player.platformId, { events: Object.keys(evented) });
     // return evented;
   });

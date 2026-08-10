@@ -65,7 +65,7 @@ interface Config {
   ownerId: string;
 }
 
-export class PubSubServer {
+export class PubSub {
   private constructor(
     private config: Config = {
       clientId: env.TWITCH_EXTENSION_CLIENT_ID,
@@ -183,8 +183,8 @@ export class PubSubServer {
   createJwt = (channelId?: string, targets?: string[]) => this.createToken(channelId, targets);
 
   // Singleton instance for convenience
-  private static instance?: PubSubServer;
+  private static instance?: PubSub;
   static get I() {
-    return (PubSubServer.instance ??= new PubSubServer());
+    return (PubSub.instance ??= new PubSub());
   }
 }

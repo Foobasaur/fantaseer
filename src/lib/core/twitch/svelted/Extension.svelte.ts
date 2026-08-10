@@ -2,15 +2,15 @@
 // Extension.ts - Twitch Extension Wrapper (Frontend)
 // ============================================
 import { Emitter } from '$lib/utilz/Emitter';
+import { PubSub } from '../PubSub';
 import type { Twitch as TT } from '../types';
-import { PubSubClient } from '../PubSubClient';
 
 let instance = $state<Twitch>();
 export class Twitch extends Emitter {
   helixer?: TT.Ext.HelixUser;
   auth?: TT.Ext.Auth;
   ctx?: TT.Ext.Context;
-  pubsub: PubSubClient;
+  pubsub: PubSub;
 
   private constructor() {
     super();
@@ -61,7 +61,7 @@ export class Twitch extends Emitter {
       this.emit('featuresChanged', changed);
     });
 
-    this.pubsub = new PubSubClient({
+    this.pubsub = new PubSub({
       ext: this.ext,
       onError: err => this.emit('pubsubError', err),
       onMessage: msg => this.emit('pubsubMessage', msg)

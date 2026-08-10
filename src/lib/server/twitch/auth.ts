@@ -5,7 +5,7 @@ import { $Player, Player } from '$lib/server/db/queries/identity';
 import { delay } from '$lib/utilz/polly';
 import type { Server, Twitch } from '@';
 import { error } from '@sveltejs/kit';
-import { PubSubServer } from './PubSubServer';
+import { PubSub } from './PubSub';
 import { $update } from '../db/kit';
 
 // In-memory store for pending oidc logins
@@ -52,7 +52,7 @@ export const authenticate = async (token?: string) => {
       await $update('players')({ id: player.id })({
         meta: { avatar: player.meta.user.picture, username: player.meta.user.preferred_username }
       }); // Keep avatar + email up-to-date
-      PubSubServer.I.broadcast<'players'>(player.platformId, { event: 'players:updated', payload: player }); // Notify any active sessions of updated identity
+      PubSub.I.broadcast<'players'>(player.platformId, { event: 'players:updated', payload: player }); // Notify any active sessions of updated identity
       return player;
     }
   };
