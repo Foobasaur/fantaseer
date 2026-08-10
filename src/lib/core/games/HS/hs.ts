@@ -5,6 +5,7 @@ import type { Card, GameEventName, GameTagMechanic } from './types';
 
 // UI-friendly transformations via morph.strumbolize
 export const filtrations = {
+  // TODO: make less relient on ext updates
   sets: strumbolize('Set', {
     CORE: 'Core',
     EVENT: 'Event',
@@ -48,6 +49,7 @@ export const filtrations = {
     THE_LOST_CITY: 'The Lost City',
     TIME_TRAVEL: 'Across the Timeways',
     CATACLYSM: 'CATACLYSM',
+    ESCAPEFROM_VIOLET_HOLD: "Escape From Violet Hold",
     EXPERT1: 'Classic',
     LEGACY: 'Legacy',
     TB: 'Tavern Brawl',
