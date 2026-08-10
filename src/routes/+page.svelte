@@ -278,8 +278,8 @@ const moteField: Attachment<HTMLCanvasElement> = canvas => {
         <h1 class="wordmark font-black tracking-tight text-[clamp(44px,6.5vw,104px)] leading-none">fantaseer</h1>
       </div>
       <p class="hero-in mx-auto mt-3 max-w-xl text-pretty text-base text-purple-200/80 sm:text-lg xl:max-w-2xl xl:text-xl" style="--rise-delay: 120ms">
-        Fantasy drafts and live pick'ems, right inside your Twitch stream.
-        <span class="font-semibold text-white/90"> Your gameplay becomes their fantasy league. </span>
+        Fantasy draft pick up games and rankings panel.
+        <span class="font-semibold text-white/90"> Streamer gameplay becomes Twitch chats fantasy league. </span>
       </p>
       <div class="hero-in mt-5 flex flex-wrap items-center justify-center gap-3" style="--rise-delay: 240ms">
         {@render CTA(TWITCH, TWITCH_D, 'Add to Twitch', PRIMARY)}
