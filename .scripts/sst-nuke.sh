@@ -38,6 +38,17 @@ if [[ "${#APP}" -lt 4 ]]; then
   exit 2
 fi
 
+export AWS_PROFILE="${AWS_PROFILE:-exe}"
+
+# AWS profile + SSO auto-login
+if ! aws sts get-caller-identity &>/dev/null; then
+  echo "SSO session expired or missing for profile '$AWS_PROFILE' — logging in..."
+  aws sso login || {
+    echo "  Browser launch failed (common in WSL). Retrying with device code..." >&2
+    aws sso login --use-device-code
+  }
+fi
+
 EC2_FILTER="Name=tag:sst:app,Values=$APP"
 
 # ────── Helpers ──────

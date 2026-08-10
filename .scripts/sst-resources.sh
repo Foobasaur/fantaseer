@@ -23,6 +23,17 @@ else
   HEADER_APP="$APP"
 fi
 
+export AWS_PROFILE="${AWS_PROFILE:-exe}"
+
+# AWS profile + SSO auto-login
+if ! aws sts get-caller-identity &>/dev/null; then
+  echo "SSO session expired or missing for profile '$AWS_PROFILE' — logging in..."
+  aws sso login || {
+    echo "  Browser launch failed (common in WSL). Retrying with device code..." >&2
+    aws sso login --use-device-code
+  }
+fi
+
 section() { printf '\n=== %s ===\n' "$1"; }
 
 # Runs the command without eval. On non-zero exit, prints the AWS error (truncated)
