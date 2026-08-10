@@ -15,7 +15,7 @@
 //   // Cleanup
 //   ps.destroy();
 // ============================================
-import type { Twitch } from '../../types';
+import type { Twitch } from './types';
 
 /**
  * Incoming PubSub message as received by client listeners.

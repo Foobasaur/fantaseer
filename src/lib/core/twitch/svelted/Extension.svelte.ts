@@ -2,8 +2,8 @@
 // Extension.ts - Twitch Extension Wrapper (Frontend)
 // ============================================
 import { Emitter } from '$lib/utilz/Emitter';
-import type { Twitch as TT } from '../../types';
-import { PubSubClient } from './PubSubClient';
+import type { Twitch as TT } from '../types';
+import { PubSubClient } from '../PubSubClient';
 
 let instance = $state<Twitch>();
 export class Twitch extends Emitter {

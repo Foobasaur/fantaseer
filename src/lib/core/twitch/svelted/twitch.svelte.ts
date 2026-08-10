@@ -3,7 +3,7 @@ import ebs from '$lib/svelted/ebs';
 import { waitFor } from '$lib/utilz/polly';
 import type { Server, Twitch as TT } from '@';
 import { onMount } from 'svelte';
-import { Twitch } from './services/Extension.svelte';
+import { Twitch } from './Extension.svelte';
 
 let isLinked = $state(true);
 let viewer = $state<toothy<TT.Viewer>>();

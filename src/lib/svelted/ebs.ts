@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import type { Pathname, ResolvedPathname } from '$app/types';
-import { Twitch } from '$lib/core/twitch/svelted/services/Extension.svelte';
+import { Twitch } from '$lib/core/twitch/svelted/Extension.svelte';
 import { error } from '@sveltejs/kit';
 
 type Opts = { fetch?: typeof fetch; path: Pathname | ResolvedPathname };
