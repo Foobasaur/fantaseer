@@ -10,6 +10,9 @@ import type {
   SpellSchool
 } from './api/enums';
 
+export const MODES = ['Standard', 'Arena', 'Wild', 'Battlegrounds'] as const;
+export type GameMode = (typeof MODES)[number];
+
 export type GameResult = 'Win' | 'Loss' | 'Tie' | 'None';
 
 /**

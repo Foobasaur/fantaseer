@@ -128,7 +128,7 @@ export const scores = async (categories: Server.DB.Infertable['categories'][], p
     return {
       viewerId,
       categoryId,
-      username: viewer?.meta?.username || `Viewer ${viewerId}`,
+      username: truncate(viewer?.meta?.username || `Viewer ${viewerId}`),
       avatar: viewer?.meta?.avatar,
       fantasy: {
         drafts: 0,

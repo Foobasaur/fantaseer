@@ -13,8 +13,6 @@ export const load = async ({ fetch, depends, untrack, params }: Parameters<Layou
     fantasy: {
       drafts: 0,
       picks: 0,
-      observedPicks: 0,
-      notObservedEvents: 0,
       eventables: new Array<{ eventable: string; pickable: string; events: number }>()
     },
     pickems: { attempts: 0, hits: 0, misses: 0 },

@@ -1,7 +1,6 @@
 <script lang="ts">
 import { stats } from '$lib/core/games/games';
-import type { GameMode } from '$lib/core/games/HS/hs';
-import type { Card } from '$lib/core/games/HS/types';
+import type { Card, GameMode } from '$lib/core/games/HS/types';
 import Stats from '$lib/svelted/ui/layout/Stats.svelte';
 import type { Game, Server } from '@';
 
@@ -9,7 +8,7 @@ interface Props {
   picks: Card[] | unknown[]; // Can be either pickables or full card objects depending on context
   category?: Server.DB.Infertable['categories'];
   overview?: {
-    events?: Map<string, ReturnType<Game.IGameClient<Game.Code>['scored']>>;
+    events?: Map<string, ReturnType<Game.Client<Game.Code>['scored']>>;
     observers?: Map<string, Server.DB.Metabled<'observers', unknown>[]>;
   };
   onRemove?: (pick: Card) => void;

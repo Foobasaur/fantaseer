@@ -3,8 +3,7 @@
  * Works directly with Card type - no abstraction.
  */
 import { battlegrounds, filtrations } from '$lib/core/games/HS/hs';
-import type { GameMode } from '$lib/core/games/HS/hs';
-import type { Card } from '$lib/core/games/HS/types';
+import type { Card, GameMode } from '$lib/core/games/HS/types';
 import { blobby, checker, PREFIXER } from '$lib/utilz/morph';
 import type { Game } from '@';
 
@@ -50,10 +49,7 @@ export const basic: Rules = {
     return card.img.render['256x'];
   },
   draftables(sets) {
-    return [
-      filtrations.sets[0],
-      ...(!sets ? filtrations.sets : filtrations.sets.filter(s => sets.includes(s[0] as string)))
-    ];
+    return [filtrations.sets[0], ...(!sets ? filtrations.sets : filtrations.sets.filter(s => sets.includes(s[0] as string)))];
   },
   check(filter, c) {
     const race = filter.card === 'MINION' ? filter.minion : PREFIXER;

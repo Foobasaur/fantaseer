@@ -60,29 +60,6 @@ export const timer = (createdAt: Date, timeBetween: number) => {
   };
 };
 
-/**
- * Checks if the specified key exists in the object and is not null or undefined.
- * ```ts
- * null    != null   // false
- * undefined != null // false  ← the magic
- * 0       != null   // true
- * ''      != null   // true
- * false   != null   // true
- * NaN     != null   // true
- * obj[key] !== null      // lets undefined through ❌
- * obj[key] !== undefined // lets null through ❌
- * obj[key] != null       // catches both ✓
- * ```
- */
-export const has =
-  <T, K extends keyof T>(key: K) =>
-  (obj: T): obj is T & { [P in K]-?: NonNullable<T[K]> } =>
-    obj[key] != null;
-export const hasnot =
-  <T, K extends keyof T>(key: K) =>
-  (obj: T): obj is T & { [P in K]: Extract<T[K], null | undefined> } =>
-    obj[key] == null;
-
 export const sumScalars = <T extends Record<string, unknown>>(acc: T, src: Partial<T>) => {
   for (const [key, value] of Object.entries(src)) {
     if (!(key in acc)) continue;
@@ -106,3 +83,26 @@ export const sumScalars = <T extends Record<string, unknown>>(acc: T, src: Parti
   }
   return acc;
 };
+
+/**
+ * Checks if the specified key exists in the object and is not null or undefined.
+ * ```ts
+ * null    != null   // false
+ * undefined != null // false  ← the magic
+ * 0       != null   // true
+ * ''      != null   // true
+ * false   != null   // true
+ * NaN     != null   // true
+ * obj[key] !== null      // lets undefined through ❌
+ * obj[key] !== undefined // lets null through ❌
+ * obj[key] != null       // catches both ✓
+ * ```
+ */
+export const has =
+  <T, K extends keyof T>(key: K) =>
+  (obj: T): obj is T & { [P in K]-?: NonNullable<T[K]> } =>
+    obj[key] != null;
+export const hasnot =
+  <T, K extends keyof T>(key: K) =>
+  (obj: T): obj is T & { [P in K]: Extract<T[K], null | undefined> } =>
+    obj[key] == null;

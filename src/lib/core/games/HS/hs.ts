@@ -210,12 +210,8 @@ export const battlegrounds = {
 // ============================================
 // Type exports
 // ============================================
-export const MODES = ['Standard', 'Arena', 'Wild', 'Battlegrounds'] as const;
-export type GameMode = (typeof MODES)[number];
 
-export type HSC = Game.IGameClient<'HS'>;
-
-export const hs: HSC = {
+export const hs: Game.Client<'HS'> = {
   code: 'HS',
   name: 'Hearthstone',
   scoreables(e) {

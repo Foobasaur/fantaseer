@@ -8,7 +8,6 @@ import { db, tablez } from './db/client';
 import { $delete, $get, $insert, $update } from './db/kit';
 import { $Viewer, Player } from './db/queries/identity';
 import { scores } from './db/queries/summary';
-import { event } from 'sst/event';
 
 const req = () => {
   const event = getRequestEvent();

@@ -1,16 +1,15 @@
 import { filtrations } from '$lib/core/games/HS/hs';
-import type { GameMode } from '$lib/core/games/HS/hs';
-import type { Card } from '$lib/core/games/HS/types';
+import type { Card, GameMode } from '$lib/core/games/HS/types';
 import { basic, bg, type Filter } from '../rules';
 
 // PENDING — WIP drafts keyed by mode, survives create() re-entry
-const pending = $state<Partial<Record<GameMode,  { picks: Card[]; filter: Filter }>>>({});
+const pending = $state<Partial<Record<GameMode, { picks: Card[]; filter: Filter }>>>({});
 
 // STORE
 export const create = (mode: 'Standard' | 'Arena' | 'Wild' | 'Battlegrounds' | (string & {}) = 'Standard') => {
   const key = mode as GameMode;
   const rules = [basic, bg].find(r => r.modes.includes(key)) || basic;
-  pending[key] ??= {
+  const session = (pending[key] ??= {
     picks: [],
     filter: {
       mana: -1,
@@ -22,9 +21,7 @@ export const create = (mode: 'Standard' | 'Arena' | 'Wild' | 'Battlegrounds' | (
       spell: filtrations.types.spell[0][0],
       mechanic: filtrations.mechanics[0][0]
     }
-  };
-
- const session = pending[key]
+  });
   return {
     get picks() {
       return session.picks;

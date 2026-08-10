@@ -1,13 +1,12 @@
 import { waitFor } from '$lib/utilz/polly';
 import type { Game } from '@';
 import CDN from './api/cdn';
-import type { Card } from './types';
-import { MODES } from './hs';
+import type { Card, MODES } from './types';
 
 // ============================================
 // Internal State
 // ============================================
-let initialized = false;
+let loaded = false;
 let cards = new Array<Card>();
 let idbi = new Map<string, Card>();
 const legal = {
@@ -19,7 +18,7 @@ const legal = {
 // ============================================
 // Module Implementation
 // ============================================
-type HSS = Game.IGame<'HS', Card, typeof MODES>;
+type HSS = Game.Server<'HS', Card, typeof MODES>;
 export const hs: HSS = {
   code: 'HS',
   name: 'Hearthstone',
@@ -58,21 +57,21 @@ export const hs: HSS = {
     }
   },
 
-  get initializeer() {
-    return waitFor(() => initialized, { timeout: 60, step: 500 }).catch(() => {
+  get initialized() {
+    return waitFor(() => loaded, { timeout: 60, step: 500 }).catch(() => {
       console.warn('Failed to initialize HS module: cards did not load in time');
-      return initialized;
+      return loaded;
     });
   },
   async init() {
-    initialized = false;
+    loaded = false;
     console.log('Initializing HS module...', new Date().toLocaleTimeString());
     const contents = await CDN();
     Object.assign(legal, contents);
     cards = [...contents.cards];
     cards.forEach(c => idbi.set(c.id, c));
     console.log('Initializing HS Done', new Date().toLocaleTimeString());
-    initialized = true;
+    loaded = true;
     return this;
   },
   draftables: mode =>
