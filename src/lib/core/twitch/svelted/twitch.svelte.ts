@@ -24,10 +24,13 @@ export const init = async () => {
     });
     await authHander();
     console.log('Twitch Extension Init:', Twitch.I.auth, Twitch.I.ctx, Twitch.I.viewer, Twitch.I.helixer);
-    Twitch.I.pubsub?.onBroadcast<Server.DB.FeedEntry<Server.DB.Tablekey> | Server.DB.TBatch<Server.DB.Tablekey>>(async msg => {
-      if (msg.data && 'events' in msg.data) Twitch.I.emit('*', msg.data);
-      else if (msg.data) Twitch.I.emit(msg.data.event, { payload: msg.data.payload, values: msg.data.values });
-    });
+    Twitch.I.pubsub?.onBroadcast<Server.DB.FeedEntry<Server.DB.Tablekey> | Server.DB.TBatch<Server.DB.Tablekey>>(
+      async msg => {
+        if (!msg.data) return;
+        else if ('events' in msg.data) Twitch.I.emit('*', msg.data);
+        else Twitch.I.emit(msg.data.event, { payload: msg.data.payload, values: msg.data.values });
+      }
+    );
   } catch (e) {
     throw new Error(`Error waiting for Twirch ext client helper initialization: ${e instanceof Error ? e.message : e}`);
   }
@@ -35,8 +38,13 @@ export const init = async () => {
 
 export const usePubSub = (
   handlers: {
-    [K in keyof Server.DB.TMultiEvent<Server.DB.Tablekey> | '*']?: K extends '*' ? (batch: Server.DB.TBatch<Server.DB.Tablekey>) => void
-    : (data: Server.DB.TMultiEvent<Server.DB.Tablekey>[Exclude<K, '*'>] | Array<Server.DB.TMultiEvent<Server.DB.Tablekey>[Exclude<K, '*'>]>) => void;
+    [K in keyof Server.DB.TMultiEvent<Server.DB.Tablekey> | '*']?: K extends '*' ?
+      (batch: Server.DB.TBatch<Server.DB.Tablekey>) => void
+    : (
+        data:
+          | Server.DB.TMultiEvent<Server.DB.Tablekey>[Exclude<K, '*'>]
+          | Array<Server.DB.TMultiEvent<Server.DB.Tablekey>[Exclude<K, '*'>]>
+      ) => void;
   },
   ...emmits: Array<Server.DB.TEventKey<Server.DB.Tablekey>>
 ) => {

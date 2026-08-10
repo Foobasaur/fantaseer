@@ -15,7 +15,7 @@ import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 
 import { create } from '../store.svelte';
 import Deck from './Deck.svelte';
-import Slider from './Slider.svelte';
+import Slider from './controls/Slider.svelte';
 import { page } from '$app/state';
 
 // PROPS: data for the draft and a submit function to finalize picks
