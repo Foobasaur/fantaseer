@@ -4,7 +4,7 @@ import { Twitch } from '$lib/core/twitch/svelted/Extension.svelte';
 import { error } from '@sveltejs/kit';
 
 type Opts = { fetch?: typeof fetch; path: Pathname | ResolvedPathname };
-export default function ({ fetch = globalThis.fetch, path }: Opts) {
+export default function <U>({ fetch = globalThis.fetch, path }: Opts) {
   const endpoint = path.replace(/^.*?\/?api\/([^#?]*).*$/, '/$1').replace(/\/undefined/g, '');
   const input = new URL(`/api${endpoint}`, import.meta.env.VITE_EBS_URL || origin);
 
@@ -33,10 +33,10 @@ export default function ({ fetch = globalThis.fetch, path }: Opts) {
     } else error(599, JSON.parse(body)?.message || body || 'Unknown');
   };
   return {
-    async get<T>(params?: Record<string, strumbol>) {
+    async get<T = U>(params?: Record<string, strumbol>) {
       return await reply<T>(params);
     },
-    async post<T>(body?: unknown, params?: Record<string, strumbol>) {
+    async post<T = U>(body?: unknown, params?: Record<string, strumbol>) {
       return await reply<T>(params, { method: 'POST', body: JSON.stringify(body || {}) });
     }
   };

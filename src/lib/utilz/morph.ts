@@ -14,8 +14,6 @@ export const checker = <T>(eq1: T | T[], eq2: T | T[], prefix = PREFIXER) => {
   return Arrg(eq2).some(e => set.has(e));
 };
 
-export const identify = <T>(x: T): T => x;
-
 export const blobby = (o: object) => {
   const imgs = Object.entries(o).reduce(
     (acc, [path, module]) => {
@@ -82,6 +80,23 @@ export const sumScalars = <T extends Record<string, unknown>>(acc: T, src: Parti
     }
   }
   return acc;
+};
+
+export const zipLeaves = <
+  A extends { [G in keyof A]: Record<keyof A[G], object> },
+  B extends { [G in keyof A]: Record<keyof A[G], object> }
+>(
+  a: A,
+  b: B
+): { [G in keyof A]: { [K in keyof A[G]]: A[G][K] & B[G][K & keyof B[G]] } } => {
+  const aa = a as unknown as Record<string, Record<string, object>>;
+  const bb = b as unknown as Record<string, Record<string, object>>;
+  return Object.fromEntries(
+    Object.entries(aa).map(([g, group]) => [
+      g,
+      Object.fromEntries(Object.entries(group).map(([k, v]) => [k, { ...v, ...bb[g]?.[k] }]))
+    ])
+  ) as never;
 };
 
 /**

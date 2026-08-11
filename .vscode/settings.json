@@ -13,7 +13,6 @@
   "prettier.experimentalOperatorPosition": "end",
   "prettier.svelteBracketNewLine": false,
   "prettier.svelteIndentScriptAndStyle": false,
-  "debug.javascript.autoAttachFilter": "always",
   "files.exclude": {
     "**/.git": false
   }

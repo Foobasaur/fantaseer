@@ -25,9 +25,9 @@ export namespace Game {
   }
 
   interface Metric {
+    readonly weight: number;
     label: string;
-    weight: number;
-    description?: string;
+    description: string;
   }
 
   /**
@@ -48,17 +48,19 @@ export namespace Game {
     readonly describe: string;
   };
 
+  interface Scores<M = Metric> {
+    ew: Record<'observed' | 'matched', M>; // Engagement Weights
+    pw: Record<'win' | 'lose', M>; // Pickaroo Weights
+  }
+
   /**
    * Game module SERVER contract.
    */
   interface Server<G extends Code, out T, in Tmodes extends readonly string[] = string[]> extends Game<G> {
-    scores: {
-      ew: Record<'observed' | 'picked' | 'unpicked', Metric>; // Engagement Weights
-      pw: Record<'win' | 'lose', Metric>; // Pickaroo Weights
-    };
+    readonly scores: Scores;
 
     // Lifecycle
-    readonly initialized: Promise<boolean | void>;
+    loaded?: boolean;
     init(): Promise<this>;
 
     // Data access and mapping
