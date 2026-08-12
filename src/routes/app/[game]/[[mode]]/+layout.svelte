@@ -2,17 +2,17 @@
 import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
-import { morph } from '$lib';
 import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
-import { dependz, fabio, foobonic } from '$lib/svelted/app';
+import { fabio, foobonic } from '$lib/svelted/app';
+import { kappa } from '$lib/utilz/morph';
 
 let { data, params, children } = $props();
 let fabulous = $derived.by(foobonic);
 
 // ── Live updates ────────────────────────────────────────────────────────
 usePubSub({
-  'players:updated': _ => invalidate(dependz.app),
-  '*': _ => !params.mode && invalidate(dependz.app)
+  'players:updated': _ => invalidate(data.sourcee),
+  '*': _ => !params.mode && invalidate(data.sourcee)
 });
 </script>
 
@@ -64,7 +64,7 @@ to_top mask, new (30% / 94%):
     </button>
     <span class="fab-close btn btn-circle btn-lg btn-error">⇲</span>
     {#each fabio as { slug, icon, route }}
-      <div class="tooltip" data-tip={morph.kappa(slug)}>
+      <div class="tooltip" data-tip={kappa(slug)}>
         <a
           href={resolve(route, {
             game: data.game.code,

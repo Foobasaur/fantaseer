@@ -3,15 +3,15 @@ import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import Pickems from '$lib/core/games/HS/features/pickaroo/svelted/ui/Pickems.svelte';
 import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte.js';
-import { dependz } from '$lib/svelted/app';
 import ebs from '$lib/svelted/ebs';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
-import type { Stat } from '$lib/svelted/ui/layout/Stats.svelte';
 import Stats from '$lib/svelted/ui/layout/Stats.svelte';
 import { has, hasnot } from '$lib/utilz/morph';
 import { tc } from '$lib/utilz/polly';
+
+import type { Stat } from '$lib/svelted/ui/layout/Stats.svelte';
 
 let { data, params } = $props();
 
@@ -46,14 +46,14 @@ const stated = ({ attempts = -1, hits = -1, misses = -1 }) =>
   ].filter(s => s.value > -1) as Stat[];
 
 usePubSub({
-  'pickaroos:updated': () => invalidate(dependz.pickaroo),
+  'pickaroos:updated': () => invalidate(data.sourcee),
   'pickems:updated': () => {
     optimisticPick = null;
-    invalidate(dependz.pickaroo);
+    invalidate(data.sourcee);
   },
   '*': e => {
     if (e.events.includes('pickems:updated')) optimisticPick = null;
-    if (category) invalidate(dependz.pickaroo);
+    if (category) invalidate(data.sourcee);
   }
 });
 </script>
@@ -85,7 +85,7 @@ usePubSub({
         loading = true;
         error = await tc(async () => {
           optimisticPick = { pickarooId: pickaroo.id, pickable: pick.id };
-          await ebs({ path: `/app/${params.game}/${params.mode}/pickaroo` }).post({ pick, pickarooId: pickaroo.id });
+          await ebs(`/app/${params.game}/${params.mode}/pickaroo`).post({ pick, pickarooId: pickaroo.id });
         });
         loading = false;
       }} />

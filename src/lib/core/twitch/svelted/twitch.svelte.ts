@@ -11,7 +11,7 @@ let viewer = $state<toothy<TT.Viewer>>();
 const authHander = async () => {
   return (viewer ||= isLinked =
     Twitch.I.viewer.isLinked &&
-    (await (h => ebs({ path: resolve('/api/configure/[kind]', { kind: 'viewer' }) }).post<TT.Viewer>(h))(
+    (await (h => ebs(resolve('/api/configure/[kind]', { kind: 'viewer' }) ).post<TT.Viewer>(h))(
       await Twitch.I.Viewer()
     )));
 };

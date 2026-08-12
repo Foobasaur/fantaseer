@@ -75,7 +75,7 @@ const error = $derived(
       class="btn btn-sm btn-error"
       disabled={!selected[tab].size}
       onclick={async () => {
-        const client = ebs({ path: `/configure/config` });
+        const client = ebs(`/configure/config`);
         data = await client.post({ action: actionable[tab].action, ids: [...selected[tab]] });
         selected[tab] = new Set();
       }}>

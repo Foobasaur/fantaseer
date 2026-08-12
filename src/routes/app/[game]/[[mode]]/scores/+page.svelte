@@ -1,7 +1,6 @@
 <script lang="ts">
 import { invalidate } from '$app/navigation';
 import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
-import { dependz } from '$lib/svelted/app';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
 import { emojiFace, eqludes, format } from '$lib/utilz/stringz';
@@ -38,7 +37,7 @@ const { totals, previous } = $derived.by(() => {
 const podium = $derived(totals?.scores && [totals.scores[1], totals.scores[0], totals.scores[2]].filter(Boolean));
 const leaderboard = $derived(totals?.scores.slice(3));
 
-usePubSub({ '*': _ => params.mode && invalidate(dependz.app) });
+usePubSub({ '*': _ => params.mode && invalidate(data.sourcee) });
 </script>
 
 {#snippet Avatar(entry: { viewerId: number; rank: number; username: string; avatar?: string })}
