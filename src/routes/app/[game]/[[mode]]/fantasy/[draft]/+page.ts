@@ -1,4 +1,4 @@
-import ebs from '$lib/svelted/ebs';
+import ebs from '$lib/common/ebs';
 import type { Server } from '@';
 import type { PageLoad } from './$types';
 

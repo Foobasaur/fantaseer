@@ -1,32 +1,32 @@
-import { browser } from '$app/environment';
-import { resolve } from '$app/paths';
-import { Twitch } from '$lib/core/twitch/svelted/Extension.svelte';
-import { error } from '@sveltejs/kit';
-
 import type { Pathname, ResolvedPathname, RouteId, RouteParams } from '$app/types';
 import type { Server } from '@';
 
-type Opts<R extends RouteId = RouteId> = {
+import { browser } from '$app/environment';
+import { resolve } from '$app/paths';
+import { Twitch } from '$lib/common/twitch/svelted/Extension.svelte';
+import { ensure } from '$lib/utilz/polly';
+import { error } from '@sveltejs/kit';
+
+const API = import.meta.env.VITE_EBS_URL;
+
+interface Opts<R extends RouteId = RouteId> {
   path?: Pathname | ResolvedPathname;
   route?: { id: R };
   params?: RouteParams<R>;
   fetch?: typeof fetch;
   depends?: (...deps: Array<`${string}:${string}`>) => void;
-};
+}
 export default function <R extends RouteId = RouteId>(opts: Pathname | ResolvedPathname | Opts<R>) {
   const { path, fetch, depends, route, params }: Opts<R> = typeof opts === 'object' ? opts : { path: opts };
-  const endpoint = (
+  const url = ensure(
     path ||
-    (route &&
-      (resolve as unknown as (id: string, params?: Record<string, string | undefined>) => ResolvedPathname)(
-        `/api${route.id}`,
-        params
-      )) ||
-    error(599, 'No pathing or route provided')
-  )
-    .replace(/^.*?\/?api\/([^#?]*).*$/, '/$1')
-    .replace(/\/undefined/g, '');
-  const input = new URL(`/api${endpoint}`, import.meta.env.VITE_EBS_URL || origin);
+      (route &&
+        (resolve as unknown as (id: string, params?: Record<string, string | undefined>) => ResolvedPathname)(
+          `/api${route.id}`,
+          params
+        ))
+  );
+  const input = new URL(`/api${url.replace(/^.*?\/?api\/([^#?]*).*$/, '/$1').replace(/\/undefined/g, '')}`, API || origin);
 
   const reply = async <T>(
     params?: Record<string, strumbol>,

@@ -1,11 +1,11 @@
-import ebs from '$lib/svelted/ebs';
+import ebs from '$lib/common/ebs';
 import type { LayoutLoad } from './$types';
 export const load: LayoutLoad = ({ fetch, depends, untrack, params, route }) => {
  const mode = untrack(() => params.mode);
   return ebs({ path: `/app/${params.game}${mode ? `/${mode}` : ''}`, fetch, depends, route }).get();
 };
 
-// import ebs from '$lib/svelted/ebs';
+// import ebs from '$lib/common/ebs';
 // import { AMap } from '$lib/utilz/AMap';
 // import { sumScalars } from '$lib/utilz/morph';
 // import type { Server } from '@';

@@ -1,5 +1,5 @@
 import { resolve } from '$app/paths';
-import ebs from '$lib/svelted/ebs';
+import ebs from '$lib/common/ebs';
 import { waitFor } from '$lib/utilz/polly';
 import type { Server, Twitch as TT } from '@';
 import { onMount } from 'svelte';

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { invalidate } from '$app/navigation';
-import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
+import { usePubSub } from '$lib/common/twitch/svelted/twitch.svelte';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
 import { emojiFace, eqludes, format } from '$lib/utilz/stringz';

@@ -2,7 +2,7 @@
 import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { gg, stats } from '$lib/core/games/games';
-import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
+import { usePubSub } from '$lib/common/twitch/svelted/twitch.svelte';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';

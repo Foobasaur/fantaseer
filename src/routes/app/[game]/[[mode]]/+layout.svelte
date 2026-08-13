@@ -2,8 +2,8 @@
 import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
-import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
-import { fabio, foobonic } from '$lib/svelted/app';
+import { usePubSub } from '$lib/common/twitch/svelted/twitch.svelte';
+import { fabio, foobonic } from '$lib/common/app';
 import { kappa } from '$lib/utilz/morph';
 
 let { data, params, children } = $props();

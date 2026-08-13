@@ -1,5 +1,5 @@
 <script lang="ts">
-import ebs from '$lib/svelted/ebs';
+import ebs from '$lib/common/ebs';
 import empty from '$lib/assets/empty.png';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';

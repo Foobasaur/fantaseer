@@ -1,6 +1,6 @@
 <script lang="ts">
 import { resolve } from '$app/paths';
-import { fabio } from '$lib/svelted/app';
+import { fabio } from '$lib/common/app';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
 
 let { data, params } = $props();

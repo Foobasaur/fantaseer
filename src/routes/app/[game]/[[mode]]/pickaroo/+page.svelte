@@ -2,8 +2,8 @@
 import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import Pickems from '$lib/core/games/HS/features/pickaroo/svelted/ui/Pickems.svelte';
-import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte.js';
-import ebs from '$lib/svelted/ebs';
+import { usePubSub } from '$lib/common/twitch/svelted/twitch.svelte.js';
+import ebs from '$lib/common/ebs';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';

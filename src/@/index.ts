@@ -1,5 +1,5 @@
 export type * from '$lib/core/games/types';
-export type * from '$lib/core/twitch/types';
+export type * from '$lib/common/twitch/types';
 export type * from '$lib/server/types';
 export type * from './basic';
 

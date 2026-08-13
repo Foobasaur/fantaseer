@@ -1,5 +1,5 @@
 // src/hooks.client.ts
-import { init as Twitch } from '$lib/core/twitch/svelted/twitch.svelte';
+import { init as Twitch } from '$lib/common/twitch/svelted/twitch.svelte';
 import { init as Games } from '$lib/core/games/games';
 import type { ClientInit, HandleClientError } from '@sveltejs/kit';
 import './lib/utilz/logger';
