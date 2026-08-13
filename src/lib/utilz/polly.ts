@@ -22,8 +22,6 @@ export const roundRobin =
   (index: number): T =>
     items[index % items.length];
 
-export const check = async (res: Response) =>
-  res.ok ? res.json() : error(res.status, JSON.stringify({ res, text: await res.text() }));
 export const catchy = async <T>(fn: () => Promise<T>) => {
   try {
     return json(await fn());
@@ -42,3 +40,11 @@ export const tc = async <T = void>(fn: () => Promise<T>) => {
     return (e as Error)?.message || 'An unexpected error occurred';
   }
 };
+
+export const check = async (res: Response) =>
+  res.ok ? res.json() : error(res.status, JSON.stringify({ res, text: await res.text() }));
+export const ensure = <T>(value: T | null | undefined, msg = 'Value is null or undefined'): T | never =>
+  (value != null && value) ||
+  ((): never => {
+    throw new Error(msg);
+  })();

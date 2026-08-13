@@ -39,7 +39,10 @@ to_top mask, new (30% / 94%):
   <div class="shadow-[0_72px_90px_9px_var(--color-primary)]">
     <nav
       class="tabs tabs-border tabs-xs xs:tabs-sm bg-base-300 pb-1 justify-center
-           mask-[linear-gradient(to_right,transparent,black_3%,black_97%,transparent),linear-gradient(to_top,transparent,black_35%,black_65%,transparent)]
+           mask-[
+             linear-gradient(to_right,transparent,black_3%,black_97%,transparent),
+             linear-gradient(to_top,transparent,black_35%,black_65%,transparent)
+           ]
            [&]:[--tab-border-color:color-mix(in_oklch,var(--color-base-content)_15%,transparent)]">
       {#each data.categories.map(c => c.mode) as mode (mode)}
         <a
@@ -56,6 +59,8 @@ to_top mask, new (30% / 94%):
     </nav>
   </div>
 {/snippet}
+
+{#snippet Main()}<div class="mx-auto">{@render children()}</div>{/snippet}
 
 {#snippet Footer()}
   <div class="fab fab-flower">
@@ -80,9 +85,7 @@ to_top mask, new (30% / 94%):
 
 <div class="flex h-dvh flex-col">
   <header class="shrink-0">{@render Header()}</header>
-  <main class="scrollbar-overlay min-h-0 flex-1">
-    <div class="mx-auto">{@render children()}</div>
-  </main>
+  <main class="scrollbar-overlay min-h-0 flex-1">{@render Main()}</main>
   <footer class="shrink-0">{@render Footer()}</footer>
 </div>
 
