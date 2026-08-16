@@ -3,14 +3,10 @@
  *
  * TEntity = The CDN JSON type (Card, Champion, Hero)
  * TId = The lookup key type (string | number)
- *
- * Games implement this directly with their CDN types.
- * No transformation layer - CDN JSON IS the entity type.
  */
 import type { CODES } from '@';
 export namespace Game {
-  // Game codes
-  type Code = (typeof CODES)[number];
+  type Code = (typeof CODES)[number]; // Game codes
 
   // Game module contract for all games.
   interface Game<G extends Code> {
@@ -30,32 +26,28 @@ export namespace Game {
     description: string;
   }
 
-  /**
-   * Draft rules contract.
-   * TEntity = CDN JSON type (not a platform abstraction)
-   */
-  type Fantasy<TEntity, Tmodes extends string, TFilter> = Feature<TEntity, Tmodes> & {
-    readonly length: number;
+  /** Draft rules contract. */
+  interface Fantasy<TEntity, Tmodes extends string, TFilter> extends Feature<TEntity, Tmodes> {
+    readonly length: number; // Number of picks per draft
 
     check: (filter: TFilter, entity: TEntity) => boolean[];
     draftables(sets?: string[]): kvp<strumbol, strumbol>[];
     canAdd(current: TEntity[], candidate: TEntity): boolean;
     validate(picks: TEntity[]): { valid: boolean; errors: string[] };
-  };
+  }
 
-  // Prediction templates (for pickaroo feature)
-  type Pickaroo<TEntity, Tmodes extends string> = Feature<TEntity, Tmodes> & {
+  /** Pickems rules contract. */
+  interface Pickaroo<TEntity, Tmodes extends string> extends Feature<TEntity, Tmodes> {
     readonly describe: string;
-  };
+  }
 
+  /** Scores rules contract. */
   interface Scores<M = Metric> {
     ew: Record<'observed' | 'matched', M>; // Engagement Weights
     pw: Record<'win' | 'lose', M>; // Pickaroo Weights
   }
 
-  /**
-   * Game module SERVER contract.
-   */
+  /** Game module SERVER contract. */
   interface Server<G extends Code, out T, in Tmodes extends readonly string[] = string[]> extends Game<G> {
     readonly scores: Scores;
 
@@ -76,9 +68,7 @@ export namespace Game {
     };
   }
 
-  /**
-   * Game module CLIENT contract.
-   */
+  /** Game module CLIENT contract.  */
   interface Client<G extends Code> extends Game<G> {
     // TODO?:
     // readonly Draft: Component<{ data: FantasyDraftPageData }>;

@@ -12,6 +12,7 @@
     "ext:build": "npm run build:ext && npm run ext:zip",
     "db:start": "docker compose up",
     "db:push": "drizzle-kit push",
+    "db:push:local": "drizzle-kit push --config=drizzle.local.ts",
     "db:export": "drizzle-kit export --config=drizzle.local.ts",
     "db:generate": "drizzle-kit generate --config=drizzle.local.ts",
     "db:generate:seed": "drizzle-kit generate --config=drizzle.local.ts --custom --name=seed",
