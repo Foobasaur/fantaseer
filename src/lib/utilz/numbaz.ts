@@ -15,3 +15,35 @@ export const distribute = (total: number, recipients: number) => {
 };
 export const odds = (total: number, outcome: number) =>
   outcome === 0 ? 2.0 : Math.max(1.1, round(total / outcome, 1));
+
+export const timez = {
+  second: (seconds = 1) => seconds * 1000,
+  minute: (minutes = 1) => minutes * timez.second(60),
+  hour: (hours = 1) => hours * timez.minute(60),
+  day: (days = 1) => days * timez.hour(24)
+} as const;
+
+export const rando = {
+  range: (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min,
+  choice: <T>(arr: T[] | readonly T[]) => arr[Math.floor(Math.random() * arr.length)]
+} as const;
+
+export const timer = (createdAt: Date, timeBetween: number) => {
+  const now = new Date();
+  const next = new Date(createdAt.getTime() + timeBetween);
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+  const str = (dt: Date) => {
+    const time = dt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    return (
+      dt.toDateString() === now.toDateString() ? `today at ${time}`
+      : dt.toDateString() === tomorrow.toDateString() ? `tomorrow at ${time}`
+      : dt.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    );
+  };
+  return {
+    next,
+    nextStr: str(next),
+    str: str(createdAt)
+  };
+};

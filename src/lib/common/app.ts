@@ -1,5 +1,5 @@
 import { page } from '$app/state';
-import { kappa } from '$lib/utilz/morph';
+import { kappa } from '$lib/utilz/stringz';
 
 export const fabio = [
   { route: '/app/[game]/[[mode]]', slug: 'home', icon: '🕹️', tagline: 'Fantaseer' },

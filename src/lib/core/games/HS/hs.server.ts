@@ -1,24 +1,13 @@
-import type { Game } from '@';
-import type { Card, MODES } from './types';
-
+import type { Game, HS } from '@';
 import { Scores } from '../games.server';
-import CDN from './api/cdn';
+import CDN from './common/cdn';
 
+// Internal State =============================
+const legal: Returnz<typeof CDN> = { Wild: [], Arena: [], Standard: [], Battlegrounds: [], cards: [] };
+let idbi = new Map<string, HS.Card>();
 // ============================================
-// Internal State
-// ============================================
-let cards = new Array<Card>();
-let idbi = new Map<string, Card>();
-const legal = {
-  Arena: [] as string[],
-  Standard: [] as string[],
-  Wild: [] as string[],
-  Battlegrounds: [] as string[]
-};
-// ============================================
-// Module Implementation
-// ============================================
-type HSS = Game.Server<'HS', Card, typeof MODES>;
+
+type HSS = Game.Server<'HS', HS.Card, typeof HS.MODES>;
 export const hs: HSS = {
   code: 'HS',
   name: 'Hearthstone',
@@ -29,15 +18,15 @@ export const hs: HSS = {
 
   draftables: mode =>
     mode ?
-      [...new Set(cards.filter(c => legal[mode].includes(c.id)).map(c => c.set as string))]
-    : [...new Set(cards.map(c => c.set as string))],
-  pickables: mode => (mode ? cards.filter(c => legal[mode].includes(c.id)) : cards),
+      [...new Set(legal.cards.filter(c => legal[mode].includes(c.id)).map(c => c.set as string))]
+    : [...new Set(legal.cards.map(c => c.set as string))],
+  pickables: mode => (mode ? legal.cards.filter(c => legal[mode].includes(c.id)) : legal.cards),
   toPickable: (card => (Array.isArray(card) ? card.map(c => c.id) : card.id)) as HSS['toPickable'],
   fromPickable: (idbs => (Array.isArray(idbs) ? idbs.map(id => idbi.get(id)) : idbi.get(idbs))) as HSS['fromPickable'],
 
   init: async () => {
-    cards = [...Object.assign(legal, await CDN()).cards];
-    cards.forEach(c => idbi.set(c.id, c));
+    Object.assign(legal, await CDN());
+    idbi = new Map<string, HS.Card>(legal.cards.map(c => [c.id, c]));
     return ((hs.loaded = true), hs);
   }
 };

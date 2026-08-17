@@ -148,7 +148,7 @@ describe.skipIf(!armed)('populate', () => {
       .where(eq(players.id, foundation.playerId));
     assert.strictEqual(row?.platformId, cfg.channelId, 'the broadcaster is not the channel the dev fallback asks for');
 
-    const { default: CDN } = await import('$lib/core/games/HS/api/cdn');
+    const { default: CDN } = await import('$lib/core/games/HS/common/cdn');
     const known = new Set((await CDN()).cards.map(c => c.id));
     const pickables = await db
       .selectDistinct({ pickable: events.pickable })

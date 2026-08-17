@@ -1,15 +1,15 @@
 <script lang="ts">
 import { page } from '$app/state';
-import type { Card } from '$lib/core/games/HS/types';
+import { create } from '$lib/core/games/HS/impl/pickaroo/rules';
 import Cardio from '$lib/svelted/ui/actions/buttons/Card.svelte';
-import { create } from '$lib/core/games/HS/features/pickaroo/rules';
+import type { HS } from '@';
 
 // PROPS: data for the draft and a submit function to finalize picks
-let props: { pickables?: unknown[]; pickem?: unknown; submit: (pick: Card) => Promise<void> } = $props();
+let props: { pickables?: unknown[]; pickem?: unknown; submit: (pick: HS.Card) => Promise<void> } = $props();
 const store = $derived(create(page.params.mode));
-const pick = $derived(props.pickem ? (props.pickem as Card) : null);
+const pick = $derived(props.pickem ? (props.pickem as HS.Card) : null);
 const cards = $derived.by(() => {
-  const arr = (props.pickables?.filter(Boolean) ?? []) as Card[];
+  const arr = (props.pickables?.filter(Boolean) ?? []) as HS.Card[];
   return pick ? [pick, ...arr.filter(c => c !== pick)] : arr;
 });
 </script>

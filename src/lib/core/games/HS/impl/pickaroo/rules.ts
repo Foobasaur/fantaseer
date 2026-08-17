@@ -1,13 +1,6 @@
-/**
- * Hearthstone draft rules.
- * Works directly with Card type - no abstraction.
- */
-import type { Game } from '@';
-import type { Card, GameMode } from '../../types';
+import type { Game, HS } from '@';
 
-// FILTER STORE: Manages filtration state for card browser
-
-type Rules = Game.Pickaroo<Card, GameMode>;
+type Rules = Game.Pickaroo<HS.Card, HS.Mode>;
 const basic: Rules = {
   modes: ['Standard', 'Arena', 'Wild'],
   describe: 'Next 3 Turn Draw',
@@ -24,10 +17,10 @@ const bg: Rules = {
   }
 };
 
-export const create = (mode: 'Standard' | 'Arena' | 'Wild' | 'Battlegrounds' | (string & {}) = 'Standard') => {
+export const create = (mode: HS.Mode | (string & {}) = 'Standard') => {
   return {
     get rules() {
-      return [basic, bg].find(r => r.modes.includes(mode as GameMode)) || basic;
+      return [basic, bg].find(r => r.modes.includes(mode as HS.Mode)) || basic;
     }
   };
 };

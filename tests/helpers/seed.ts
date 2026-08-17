@@ -2,8 +2,8 @@
 // TYPES
 // ============================================================
 
-import Fetcher from '$lib/core/games/HS/api/cdn';
-import { rando } from '$lib/utilz/morph';
+import Fetcher from '$lib/core/games/HS/common/cdn';
+import { rando } from '$lib/utilz/numbaz';
 import type { Server } from '@';
 import {
   insertCategory,
@@ -17,7 +17,7 @@ import {
   insertUser,
   insertViewer
 } from './db';
-import type { GameEventName } from '$lib/core/games/HS/types';
+import type { HS } from '$lib/core/games/HS/types';
 
 // ============================================================
 // CORE TYPES
@@ -68,7 +68,7 @@ export type Counts = {
 // PROFILE CONFIGURATIONS
 // ============================================================
 
-export const gameEvents: GameEventName[] = [
+export const gameEvents: HS.GameEventName[] = [
   // Player events
   'OnPlayerDraw',
   'OnPlayerGet',

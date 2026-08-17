@@ -1,13 +1,13 @@
 // Hearthstone json API client with CDN URL construction
 import { cached } from '$lib/utilz/fscache';
-import type { Card, ICard, ImgResolution } from '../types';
+import type { HS } from '@';
 import { FormatType, GameTag, GameType } from './enums';
 import { parse } from './xdefs';
 
 const art = (id: string, url = 'https://art.hearthstonejson.com/v1') => {
   const resolutions = ['256x', '512x', 'orig'];
   const urls = (path: string, { res = resolutions, fmt = 'png' } = {}) =>
-    Object.fromEntries(res.map(r => [r, `${url}/${path}/${r}/${id}.${fmt}`])) as ImgResolution;
+    Object.fromEntries(res.map(r => [r, `${url}/${path}/${r}/${id}.${fmt}`])) as HS.ImgResolution;
   return {
     tile: `${url}/tiles/${id}.webp`,
     art: urls('art/latest'),
@@ -21,21 +21,22 @@ export default async function ({
   xdefs = 'https://api.hearthstonejson.com/v1/latest/CardDefs.xml',
   legal = {
     arena: `https://hsreplay.net/api/v1/live/legal_cards/?game_type=${GameType.GT_UNDERGROUND_ARENA}&format_type=${FormatType.FT_WILD}`,
-    standard: `https://hsreplay.net/api/v1/live/legal_cards/?game_type=${GameType.GT_RANKED}&format_type=${FormatType.FT_STANDARD}`,
-    wild: `https://hsreplay.net/api/v1/live/legal_cards/?game_type=${GameType.GT_RANKED}&format_type=${FormatType.FT_WILD}`
+    standard: `https://hsreplay.net/api/v1/live/legal_cards/?game_type=${GameType.GT_RANKED}&format_type=${FormatType.FT_STANDARD}`
   }
 } = {}) {
   const [all, collectible] = await Promise.all(
     [`${api}/cards`, `${api}/cards.collectible`].map(url =>
       cached(url.split('/').pop()!, async () => {
         const res = await fetch(url + '.json');
-        const data = (await res.json()) as ICard[];
+        const data = (await res.json()) as HS.ICard[];
         return data.map(card => ({ ...card, img: art(card.id) }));
       })
     )
   );
 
-  const [Arena, Standard, Wild] = await Promise.all(
+  const Wild = collectible.filter(c => !['HERO_SKINS', 'CORE_HIDDEN', 'EVENT'].includes(c.set as string)).map(c => c.id);
+
+  const [Arena, Standard] = await Promise.all(
     Object.entries(legal).map(([k, v]) =>
       cached(k, async () => {
         const res = await fetch(v, { headers: { 'User-Agent': 'HDTPortable/1.0 (Unknown)' } });
@@ -63,6 +64,6 @@ export default async function ({
       const tail = card.id.split('_').pop() ?? '';
       if (/^\d+$/.test(tail) && !acc.some(c => card.id.startsWith(c.id))) acc.push(card);
       return acc;
-    }, [] as Card[])
+    }, [] as HS.Card[])
   };
 }

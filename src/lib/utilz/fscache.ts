@@ -1,7 +1,7 @@
 import { dev } from '$app/environment';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { timez } from './morph';
+import { timez } from './numbaz';
 
 export async function cached<T>(key: string, fn: () => Promise<T>, ttl = timez.hour(12)): Promise<T> {
   const cashed = async () => {

@@ -6,11 +6,10 @@ import { onMount } from 'svelte';
 import { Extension } from '../Extension';
 
 export const twitch = $state(new Extension());
-let isLinked = $state(true);
-let viewer = $state<toothy<Twitch.Viewer>>();
 
+let viewer = $state<toothy<Twitch.Viewer>>();
 const authHander = async () => {
-  return (viewer ||= isLinked =
+  return (viewer ||=
     twitch.viewer.isLinked &&
     (await (h => ebs(resolve('/api/configure/[kind]', { kind: 'viewer' })).post<Twitch.Viewer>(h))(await twitch.Viewer())));
 };
@@ -66,7 +65,7 @@ export const useAuthListener = () => {
   // prettier-ignore
   return {
     link: () => twitch.actions.requestIdShare(),
-    get linked() { return isLinked; },
+    get linked() { return true || twitch.viewer.isLinked; },
     get viewer() { return viewer; }
   };
 };

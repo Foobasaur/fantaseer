@@ -1,25 +1,24 @@
 <script lang="ts">
 import { stats } from '$lib/core/games/games';
-import type { Card, GameMode } from '$lib/core/games/HS/types';
 import Stats from '$lib/svelted/ui/layout/Stats.svelte';
-import type { Game, Server } from '@';
+import type { Game, HS, Server } from '@';
 
 interface Props {
-  picks: Card[] | unknown[]; // Can be either pickables or full card objects depending on context
+  picks: HS.Card[] | unknown[]; // Can be either pickables or full card objects depending on context
   category?: Server.DB.Infertable['categories'];
   overview?: {
     events?: Map<string, ReturnType<Game.Client<Game.Code>['scored']>>;
     observers?: Map<string, Server.DB.Metabled<'observers', unknown>[]>;
   };
-  onRemove?: (pick: Card) => void;
+  onRemove?: (pick: HS.Card) => void;
 }
 const { onRemove, ...props }: Props = $props();
 
-const mode = $derived(props.category?.mode as GameMode);
-const pickables = $derived(props.picks as Card[]);
+const mode = $derived(props.category?.mode as HS.Mode);
+const pickables = $derived(props.picks as HS.Card[]);
 const deck = $derived.by(() => {
   const map = new Map(pickables.map(c => [c.id, c]));
-  const grouped = new Map<string, { card: Card; count: number }>();
+  const grouped = new Map<string, { card: HS.Card; count: number }>();
   for (const pick of pickables) {
     const card = map.get(pick.id);
     if (card) {
@@ -45,7 +44,7 @@ const deck = $derived.by(() => {
     </div>
   </div>
 
-  <!-- Card List -->
+  <!-- HS.Card List -->
   <div class="flex-1 overflow-y-auto">
     {#each deck as { card, count } (card.id)}
       <div class="group flex flex-col transition-all hover:bg-base-content/5">
@@ -55,7 +54,7 @@ const deck = $derived.by(() => {
             <span>{(mode === 'Battlegrounds' ? card.techLevel : card.cost) || 0}</span>
           </div>
 
-          <!-- Card Tile Background -->
+          <!-- HS.Card Tile Background -->
           <div class="relative flex h-full flex-1 items-center overflow-hidden">
             <img
               src={card.img.tile}

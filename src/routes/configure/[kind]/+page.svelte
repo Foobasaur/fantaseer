@@ -3,7 +3,7 @@ import ebs from '$lib/common/ebs';
 import empty from '$lib/assets/empty.png';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
-import { kappa } from '$lib/utilz/morph';
+import { kappa } from '$lib/utilz/stringz';
 
 let { data } = $props();
 let selected = $state({

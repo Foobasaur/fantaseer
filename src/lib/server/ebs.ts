@@ -1,13 +1,14 @@
-import { getRequestEvent } from '$app/server';
-import { get } from '$lib/core/games/games.server';
-import { timer, timez } from '$lib/utilz/morph';
-import type { Server, Twitch } from '@';
 import { error } from '@sveltejs/kit';
 import { and, eq, getColumns } from 'drizzle-orm';
-import { db, tablez } from './db/client';
-import { $delete, $get, $insert, $update } from './db/kit';
-import { $Viewer, Player } from './db/queries/identity';
-import { scores } from './db/queries/summary';
+
+import { getRequestEvent } from '$app/server';
+import { get } from '$lib/core/games/games.server';
+import { db, tablez } from '$lib/server/db/client';
+import { $delete, $get, $insert, $update } from '$lib/server/db/kit';
+import { $Viewer, Player } from '$lib/server/db/queries/identity';
+import { scores } from '$lib/server/db/queries/summary';
+import { timer, timez } from '$lib/utilz/numbaz';
+import type { Server, Twitch } from '@';
 
 const req = () => {
   const event = getRequestEvent();

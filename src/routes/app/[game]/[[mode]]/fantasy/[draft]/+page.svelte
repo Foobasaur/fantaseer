@@ -2,8 +2,8 @@
 import { goto, invalidate } from '$app/navigation';
 import { page } from '$app/state';
 import { gg } from '$lib/core/games/games';
-import DraftedView from '$lib/core/games/HS/features/fantasy/draft/svelted/ui/Deck.svelte';
-import DraftView from '$lib/core/games/HS/features/fantasy/draft/svelted/ui/Draft.svelte';
+import DraftedView from '$lib/core/games/HS/impl/fantasy/draft/svelted/ui/Deck.svelte';
+import DraftView from '$lib/core/games/HS/impl/fantasy/draft/svelted/ui/Draft.svelte';
 import { usePubSub } from '$lib/common/twitch/svelted/twitch.svelte.js';
 import ebs from '$lib/common/ebs';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';

@@ -393,7 +393,7 @@ export type Foundation = {
  * Imported dynamically so a live run never pays for (or trips over) the 45MB card cache it has no use for.
  */
 const cardPool = async (rand: Rando) => {
-  const { default: CDN } = await import('$lib/core/games/HS/api/cdn');
+  const { default: CDN } = await import('$lib/core/games/HS/common/cdn');
   const contents = await CDN();
   const known = new Set(contents.cards.map(c => c.id));
   return new Map<string, string[]>(

@@ -1,7 +1,7 @@
 <script lang="ts">
 import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
-import Pickems from '$lib/core/games/HS/features/pickaroo/svelted/ui/Pickems.svelte';
+import Pickems from '$lib/core/games/HS/impl/pickaroo/svelted/ui/Pickems.svelte';
 import { usePubSub } from '$lib/common/twitch/svelted/twitch.svelte.js';
 import ebs from '$lib/common/ebs';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
