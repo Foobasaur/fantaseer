@@ -4,8 +4,9 @@
  * TEntity = The CDN JSON type (Card, Champion, Hero)
  * TId = The lookup key type (string | number)
  */
-import type { CODES } from '@';
+
 export namespace Game {
+  const CODES = ['HS'] as const; // add more as needed ie: 'LOL', 'DOTA', Slay the Spire, etc
   type Code = (typeof CODES)[number]; // Game codes
 
   // Game module contract for all games.

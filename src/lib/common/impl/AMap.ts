@@ -1,8 +1,8 @@
-import { ensure } from './polly';
+import { ensure } from '$lib/utilz/polly';
 
 export class AMap<K, V> extends Map<K, V> {
-  constructor(private factory?: (key: K) => V) {
-    super();
+  constructor(private factory?: (key: K) => V, entries?: readonly (readonly [K, V])[] | null) {
+    super(entries);
   }
   getOrSet(key: K, value: V): V {
     if (this.has(key)) return this.get(key)!;
@@ -23,6 +23,10 @@ export class AMap<K, V> extends Map<K, V> {
   }
 
   static New<K>() {
-    return <V>(factory?: (key: K) => V) => new AMap<K, V>(factory);
+    return <V>(factory?: (key: K) => V, keys?: Iterable<K>) => {
+      const map = new AMap<K, V>(factory);
+      if (keys) for (const key of keys) map.compute(key);
+      return map;
+    };
   }
 }

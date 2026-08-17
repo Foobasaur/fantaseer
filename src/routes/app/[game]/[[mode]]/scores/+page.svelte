@@ -29,7 +29,7 @@ let snapshot = new Map<number, number>();
 const { totals, previous } = $derived.by(() => {
   const totals = data.totals.find(t => t.category?.mode === params.mode);
   const previous = snapshot;
-  if (totals) snapshot = new Map(totals.scores.map(s => [s.viewerId, s.rank]));
+  if (totals) snapshot = new Map(totals.scores.map(s => [s.viewer.id, s.rank]));
   return { totals, previous };
 });
 
@@ -38,9 +38,11 @@ const podium = $derived(totals?.scores && [totals.scores[1], totals.scores[0], t
 const leaderboard = $derived(totals?.scores.slice(3));
 
 usePubSub({ '*': _ => params.mode && invalidate(data.sourcee) });
+
+type Entry = NonNullable<typeof totals>['scores'][number]
 </script>
 
-{#snippet Avatar(entry: { viewerId: number; rank: number; username: string; avatar?: string })}
+{#snippet Avatar(entry: Entry)}
   <div class="avatar avatar-placeholder">
     <div
       class={[
@@ -51,31 +53,31 @@ usePubSub({ '*': _ => params.mode && invalidate(data.sourcee) });
         : entry.rank === 3 ? 'text-7xl w-16 ring-warning'
         : 'text-5xl w-8'
       ]}>
-      {#if false && entry.avatar && !eqludes(entry.avatar, 'user-default-pictures')}<img
-          src={entry.avatar}
-          alt={entry.username} />
-      {:else}<span>{emojiFace[entry.viewerId % emojiFace.length]}</span>{/if}
+      {#if false && entry.viewer.meta.avatar && !eqludes(entry.viewer.meta.avatar!, 'user-default-pictures')}<img
+          src={entry.viewer.meta.avatar}
+          alt={entry.viewer.meta.avatar} />
+      {:else}<span>{emojiFace[entry.viewer.id % emojiFace.length]}</span>{/if}
     </div>
   </div>
 {/snippet}
 
-{#snippet Username(entry: { viewerId: number; rank: number; username: string })}
+{#snippet Username(entry: Entry)}
   <!-- Positive = moved up since last invalidate, negative = moved down, 0 = same/new. -->
-  {@const delta = (prev => (prev ? prev - entry.rank : 0))(previous.get(entry.viewerId))}
+  {@const delta = (prev => (prev ? prev - entry.rank : 0))(previous.get(entry.viewer.id))}
   <span class="flex-1 truncate font-medium">
-    {entry.username}
+    {entry.viewer.meta.username}
     {#if delta > 0}
       <span class="text-success text-xs font-bold">↑{delta}</span>
     {:else if delta < 0}
       <span class="text-error text-xs font-bold">↓{-delta}</span>
     {/if}
-    {#if entry.viewerId === data.user.id}<span class="badge badge-primary badge-xs">You</span>{/if}
+    {#if entry.viewer.id === data.user.id}<span class="badge badge-primary badge-xs">You</span>{/if}
   </span>
 {/snippet}
 
-{#snippet Breakdown(entry: NonNullable<typeof totals>['scores'][number])}
+{#snippet Breakdown(entry: Entry)}
   <div class="tooltip-content text-left">
-    <p class="font-bold">{entry.username}</p>
+    <p class="font-bold">{entry.viewer.meta.username}</p>
     {#each [`🏁${entry.fantasy.drafts} ✨${entry.score.engagement} `, ` 🎲${entry.pickems.attempts} ⚡${entry.score.pickems}`] as e}
       <p>{e}</p>
     {/each}
@@ -92,7 +94,7 @@ usePubSub({ '*': _ => params.mode && invalidate(data.sourcee) });
     <!-- Podium (top 3) -->
     {#if podium?.length}
       <div class="flex items-end justify-center gap-4 px-4 pt-2">
-        {#each podium as entry, i (entry.viewerId)}
+        {#each podium as entry (entry.viewer.id)}
           {@const topping = toppings[entry.rank - 1]}
           <div class={['flex flex-col items-center tooltip tooltip-bottom podium-enter', topping[0][0]]}>
             <!-- Crown for #1: existing pinger animation (entrance ping + scale + glow loop) -->
@@ -120,13 +122,13 @@ usePubSub({ '*': _ => params.mode && invalidate(data.sourcee) });
     <!-- ── Rest of leaderboard (rank 4+) ──────────────────────────────── -->
     {#if leaderboard?.length}
       <ul class="rounded-xl bg-base-200">
-        {#each leaderboard as entry (entry.viewerId)}
+        {#each leaderboard as entry (entry.viewer.id)}
           <li
             class={[
               'tooltip tooltip-top flex items-center gap-2 border-b border-base-300 p-3 transition-all',
               'last:border-b-0 hover:bg-base-content/5',
               'first:rounded-t-xl last:rounded-b-xl',
-              entry.viewerId === data.user.id && 'bg-accent/60'
+              entry.viewer.id === data.user.id && 'bg-accent/60'
             ]}>
             <div class="tooltip-content text-left"></div>
 

@@ -1,11 +1,12 @@
-import type { Pathname, ResolvedPathname, RouteId, RouteParams } from '$app/types';
-import type { Server } from '@';
+import { error } from '@sveltejs/kit';
 
 import { browser } from '$app/environment';
 import { resolve } from '$app/paths';
-import { Twitch } from '$lib/common/twitch/svelted/Extension.svelte';
+import type { Pathname, ResolvedPathname, RouteId, RouteParams } from '$app/types';
+
+import { twitch } from '$lib/common/twitch/svelted/twitch.svelte';
 import { ensure } from '$lib/utilz/polly';
-import { error } from '@sveltejs/kit';
+import type { Server } from '@';
 
 const API = import.meta.env.VITE_EBS_URL;
 
@@ -55,8 +56,8 @@ export default function <R extends RouteId = RouteId>(opts: Pathname | ResolvedP
       headers: {
         'Content-Type': 'application/json',
         ...(browser && {
-          'x-ext-auth-jwt': Twitch.I.auth?.token || '',
-          'x-ext-ctx-mode': Twitch.I.ctx?.mode || ''
+          'x-ext-auth-jwt': twitch.auth?.token || '',
+          'x-ext-ctx-mode': twitch.ctx?.mode || ''
         })
       }
     });

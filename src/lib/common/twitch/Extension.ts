@@ -1,18 +1,17 @@
 // ============================================
 // Extension.ts - Twitch Extension Wrapper (Frontend)
 // ============================================
-import { Emitter } from '$lib/utilz/Emitter';
-import { PubSub } from '../PubSub';
-import type { Twitch as TT } from '../types';
+import { Emitter } from '$lib/common/impl/Emitter';
+import { PubSub } from './PubSub';
+import type { Twitch as TT } from './types';
 
-let instance = $state<Twitch>();
-export class Twitch extends Emitter {
+export class Extension extends Emitter {
   helixer?: TT.Ext.HelixUser;
   auth?: TT.Ext.Auth;
   ctx?: TT.Ext.Context;
   pubsub: PubSub;
 
-  private constructor() {
+   constructor() {
     super();
     // Set up authorization handler
     this.ext.onAuthorized(auth => {
@@ -109,13 +108,8 @@ export class Twitch extends Emitter {
   }
 
   async Viewer() {
-    return (this.helixer ||= await this.helix<{ data: Array<typeof Twitch.I.helixer> }>('/users?id=' + this.viewer.id)?.then(
+    return (this.helixer ||= await this.helix<{ data: Array<TT.Ext.HelixUser> }>('/users?id=' + this.viewer.id)?.then(
       res => res.data[0]
     ));
-  }
-
-  static get I() {
-    // window.Twitch && window.Twitch.ext &&
-    return (instance ??= new Twitch());
   }
 }

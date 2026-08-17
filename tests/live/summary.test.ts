@@ -238,8 +238,8 @@ describe.skipIf(!armed)('summary queries', () => {
 
   it('scores engagement and settled pickems per viewer and category', async () => {
     const result = await summary.scores([category], matrix);
-    const a = result.summaries.viewer.find(v => v.viewerId === viewerA);
-    const b = result.summaries.viewer.find(v => v.viewerId === viewerB);
+    const a = result.summaries.viewer.find(v => v.viewer.id === viewerA);
+    const b = result.summaries.viewer.find(v => v.viewer.id === viewerB);
 
     assert.deepEqual({ ...a?.fantasy.engagement }, { matched: 1, observed: 1 });
     assert.deepEqual({ ...b?.fantasy.engagement }, { matched: 0, observed: 0 });
@@ -252,7 +252,7 @@ describe.skipIf(!armed)('summary queries', () => {
     assert.equal(a?.fantasy.picks, 1);
     assert.deepEqual(a?.fantasy.eventables, [{ eventable: 'goal', pickable: 'alpha', events: 1 }]);
 
-    assert.isUndefined(result.summaries.viewer.find(v => v.viewerId === viewerC), 'C neither drafted nor picked');
+    assert.isUndefined(result.summaries.viewer.find(v => v.viewer.id === viewerC), 'C neither drafted nor picked');
     assert.equal(result.totals.length, 2, 'one bucket for the category, one for the null overall');
   });
 

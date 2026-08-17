@@ -1,36 +1,33 @@
 import { resolve } from '$app/paths';
 import ebs from '$lib/common/ebs';
 import { waitFor } from '$lib/utilz/polly';
-import type { Server, Twitch as TT } from '@';
+import type { Server, Twitch } from '@';
 import { onMount } from 'svelte';
-import { Twitch } from './Extension.svelte';
+import { Extension } from '../Extension';
 
+export const twitch = $state(new Extension());
 let isLinked = $state(true);
-let viewer = $state<toothy<TT.Viewer>>();
+let viewer = $state<toothy<Twitch.Viewer>>();
 
 const authHander = async () => {
   return (viewer ||= isLinked =
-    Twitch.I.viewer.isLinked &&
-    (await (h => ebs(resolve('/api/configure/[kind]', { kind: 'viewer' }) ).post<TT.Viewer>(h))(
-      await Twitch.I.Viewer()
-    )));
+    twitch.viewer.isLinked &&
+    (await (h => ebs(resolve('/api/configure/[kind]', { kind: 'viewer' })).post<Twitch.Viewer>(h))(await twitch.Viewer())));
 };
 
 export const init = async () => {
   try {
-    await waitFor(() => [Twitch.I.auth, Twitch.I.ctx, Twitch.I.viewer].every(Boolean), {
+    await waitFor(() => [twitch.auth, twitch.ctx, twitch.viewer].every(Boolean), {
       step: 300,
       timeout: import.meta.env.VITE_TARGET === 'mock' ? 3 : 30
     });
     await authHander();
-    console.log('Twitch Extension Init:', Twitch.I.auth, Twitch.I.ctx, Twitch.I.viewer, Twitch.I.helixer);
-    Twitch.I.pubsub?.onBroadcast<Server.DB.FeedEntry<Server.DB.Tablekey> | Server.DB.TBatch<Server.DB.Tablekey>>(
-      async msg => {
-        if (!msg.data) return;
-        else if ('events' in msg.data) Twitch.I.emit('*', msg.data);
-        else Twitch.I.emit(msg.data.event, { payload: msg.data.payload, values: msg.data.values });
-      }
-    );
+    console.log('Twitch Extension Init:', twitch.auth, twitch.ctx, twitch.viewer, twitch.helixer);
+    twitch.pubsub?.onBroadcast<Server.DB.FeedEntry<Server.DB.Tablekey> | Server.DB.TBatch<Server.DB.Tablekey>>(async msg => {
+      if (!msg.data) return;
+      else if ('events' in msg.data) twitch.emit('*', msg.data);
+      else twitch.emit(msg.data.event, { payload: msg.data.payload, values: msg.data.values });
+    });
   } catch (e) {
     throw new Error(`Error waiting for Twirch ext client helper initialization: ${e instanceof Error ? e.message : e}`);
   }
@@ -55,20 +52,20 @@ export const usePubSub = (
       (handler as (d: typeof data) => void)(data)
   }));
   onMount(() => {
-    events.forEach(({ event, handler }) => Twitch.I.on(event, handler));
-    return () => events.forEach(({ event, handler }) => Twitch.I.off(event, handler));
+    events.forEach(({ event, handler }) => twitch.on(event, handler));
+    return () => events.forEach(({ event, handler }) => twitch.off(event, handler));
   });
 };
 
 export const useAuthListener = () => {
   onMount(() => {
-    Twitch.I.on('authorized', authHander);
-    return () => Twitch.I.off('authorized', authHander);
+    twitch.on('authorized', authHander);
+    return () => twitch.off('authorized', authHander);
   });
 
   // prettier-ignore
   return {
-    link: () => Twitch.I.actions.requestIdShare(),
+    link: () => twitch.actions.requestIdShare(),
     get linked() { return isLinked; },
     get viewer() { return viewer; }
   };

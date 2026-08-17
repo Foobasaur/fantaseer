@@ -6,7 +6,7 @@ export const load: LayoutLoad = ({ fetch, depends, untrack, params, route }) => 
 };
 
 // import ebs from '$lib/common/ebs';
-// import { AMap } from '$lib/utilz/AMap';
+// import { AMap } from '$lib/common/impl/AMap';
 // import { sumScalars } from '$lib/utilz/morph';
 // import type { Server } from '@';
 // import type { LayoutLoad } from './$types';
@@ -18,11 +18,14 @@ export const load: LayoutLoad = ({ fetch, depends, untrack, params, route }) => 
 //     fantasy: {
 //       drafts: 0,
 //       picks: 0,
+//       observedPicks: 0,
+//       notObservedEvents: 0,
 //       eventables: new Array<{ eventable: string; pickable: string; events: number }>()
 //     },
 //     pickems: { attempts: 0, hits: 0, misses: 0 },
 //     score: { engagement: 0, pickems: 0, weighted: 0 }
 //   });
+
 //   const buckets = new AMap<number | null, ReturnType<typeof empty> & { rows: typeof data.summaries.viewer }>();
 //   for (const summary of data.summaries.viewer || []) {
 //     for (const cid of [summary.categoryId, null] as const) {
@@ -31,6 +34,7 @@ export const load: LayoutLoad = ({ fetch, depends, untrack, params, route }) => 
 //       sumScalars(bucket, summary);
 //     }
 //   }
+
 //   const totals = [...buckets].map(([categoryId, b]) => ({
 //     category: data.categories.find(c => c.id === categoryId),
 //     fantasy: b.fantasy,
@@ -43,5 +47,6 @@ export const load: LayoutLoad = ({ fetch, depends, untrack, params, route }) => 
 //       .sort((a, b) => b.score.weighted - a.score.weighted)
 //       .map((row, i) => ({ ...row, rank: i + 1 }))
 //   }));
+
 //   return { ...data, totals };
 // };

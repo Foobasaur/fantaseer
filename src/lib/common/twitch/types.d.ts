@@ -14,14 +14,14 @@ export namespace Twitch {
   }
 
   namespace oauth2 {
-    type Validated = {
+    interface Validated {
       client_id: string;
       login: string;
       user_id: string;
       scopes: string[];
       expires_in: number;
     };
-    type Token = {
+    interface Token {
       access_token: string;
       refresh_token: string;
       id_token: string;
@@ -30,7 +30,7 @@ export namespace Twitch {
       nonce: string;
       scope: string | string[];
     };
-    type UserInfo = {
+    interface UserInfo {
       // default claims
       aud: string;
       azp: string;

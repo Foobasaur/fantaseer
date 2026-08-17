@@ -1,7 +1,7 @@
 import { strumbolize } from '$lib/utilz/morph';
 import type { Game } from '@';
 import type { CardClass, CardSet, CardType, Race, Rarity, SpellSchool } from './api/enums';
-import type { Card, GameEventName, GameTagMechanic } from './types';
+import type { GameEventName, GameTagMechanic } from './types';
 
 // UI-friendly transformations via morph.strumbolize
 export const filtrations = {
