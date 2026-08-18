@@ -59,7 +59,10 @@ const onclick = () => !props.disabled && props.onclick();
 <style>
 .card-cv {
   content-visibility: auto;
-  contain-intrinsic-size: 316px 424px; /* padded border-box; reserves scroll space */
+  /* content-box size (spec) — the 32px padding is added on top, giving the same
+     316x424 border-box as an on-screen card. Sizing this as the border-box made
+     every off-screen card 64px wider/taller than its rendered self. */
+  contain-intrinsic-size: 252px 360px;
   padding: 32px; /* holds the ~24px glow + tilt scale inside paint containment */
   margin: -32px; /* restores your gap-0 touching layout */
 }

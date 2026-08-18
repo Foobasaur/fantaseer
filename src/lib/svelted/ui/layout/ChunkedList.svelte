@@ -46,8 +46,8 @@ interface Props {
   sticky?: boolean;
   /** Extra classes for the `<ul>`. */
   class?: ClassValue;
-  /** Extra classes for each `<li>`. */
-  row?: ClassValue;
+  /** Extra classes for each `<li>` — one value for every row, or a function of the row. */
+  row?: ClassValue | ((item: T, index: number) => ClassValue);
 }
 
 let {
@@ -130,7 +130,7 @@ const lazily = (node: HTMLElement) => {
           'flex items-center gap-2 border-b border-base-300 p-3 transition-all',
           'last:border-b-0 hover:bg-base-content/5',
           'first:rounded-t-xl last:rounded-b-xl',
-          row
+          typeof row === 'function' ? row(entry, i) : row
         ]}>
         {@render item(entry, i)}
       </li>
