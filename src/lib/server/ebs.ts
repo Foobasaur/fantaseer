@@ -1,14 +1,14 @@
-import { getRequestEvent } from '$app/server';
-import { gg } from '$lib/core/games/games.server';
-import { timer, timez } from '$lib/utilz/morph';
-import type { DB, Server, Twitch } from '@';
 import { error } from '@sveltejs/kit';
 import { and, eq, getColumns } from 'drizzle-orm';
-import { db, tablez } from './db/client';
-import { $delete, $get, $insert, $update } from './db/kit';
-import { $Viewer, Player } from './db/queries/identity';
-import { scores } from './db/queries/summary';
-import { event } from 'sst/event';
+
+import { getRequestEvent } from '$app/server';
+import { get } from '$lib/core/games/games.server';
+import { db, tablez } from '$lib/server/db/client';
+import { $delete, $get, $insert, $update } from '$lib/server/db/kit';
+import { $Viewer, Player } from '$lib/server/db/queries/identity';
+import { scores } from '$lib/server/db/queries/summary';
+import { timer, timez } from '$lib/utilz/numbaz';
+import type { Server, Twitch } from '@';
 
 const req = () => {
   const event = getRequestEvent();
@@ -38,7 +38,7 @@ const req = () => {
         categories,
         category,
         player: await this.player(),
-        module: await gg<{ id: string }>(game.code),
+        module: await get<{ id: string }>(game.code),
         user: { ...this.user, ...this.authenticated, jwt: this.jwt }
       };
     }
@@ -53,21 +53,8 @@ export const games = async () => {
 
 export const game = async () => {
   const { module, game, categories, player } = await req().model();
-  const rows = (s => ({
-    ...s,
-    summaries: s?.buckets.map(s => {
-      const engagement = Math.round(
-        s.fantasy.observedPicks * module.scores.ew.observed.weight +
-          s.fantasy.notObservedEvents * module.scores.ew.picked.weight +
-          s.fantasy.unpicked * module.scores.ew.unpicked.weight
-      );
-      const pickems = Math.round(
-        s.pickems.hits * module.scores.pw.win.weight + (s.pickems.attempts * s.pickems.misses) / module.scores.pw.lose.weight
-      );
-      return { ...s, score: { engagement, pickems, weighted: engagement + pickems } };
-    })
-  }))(player && (await scores(categories, player.id)));
-  return { player, game, categories, summaries: { viewer: rows.summaries, catigory: rows.cidbuckets } };
+  const rows = await scores(categories, module.scores, player?.id);
+  return { player, game, categories, ...rows };
 };
 
 export const draft = async () => {
@@ -75,11 +62,13 @@ export const draft = async () => {
   const { user, module, category, player } = await e.model();
 
   const TIME_BETWEEN_DRAFTS = timez.hour(12);
-  const nexty = (drafts: DB.Infertable['drafts'][]) => {
+  const nexty = (drafts: Server.DB.Infertable['drafts'][]) => {
     const open = drafts.find(e => e.createdAt.getTime() + TIME_BETWEEN_DRAFTS > Date.now());
     return open && timer(open.createdAt, TIME_BETWEEN_DRAFTS);
   };
-  const eventy = async (opts: XOR<{ categoryId: DB.ColumnCondition<number> }, { id: DB.ColumnCondition<number> }>) => {
+  const eventy = async (
+    opts: XOR<{ categoryId: Server.DB.ColumnCondition<number> }, { id: Server.DB.ColumnCondition<number> }>
+  ) => {
     const { categoryId = ['isNotNull'], id = ['isNotNull'] } = opts;
     const drafts = player && (await $get('drafts')({ where: { id, playerId: player.id, viewerId: user.id, categoryId } }));
     const picks = drafts && (await $get('picks')({ where: { draftId: ['inArray', drafts.map(d => d.id)] } }));

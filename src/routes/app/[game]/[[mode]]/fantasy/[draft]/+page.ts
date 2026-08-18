@@ -1,15 +1,11 @@
-import ebs from '$lib/svelted/ebs';
+import ebs from '$lib/common/ebs';
 import type { Server } from '@';
 import type { PageLoad } from './$types';
-import { lbizaMap } from '$lib/utilz/lbizaMap';
-import { dependz } from '$lib/svelted/app';
 
-const news = new lbizaMap<string, { pickables: { id: string }[]; draftables: string[] }>();
-export const load: PageLoad = async ({ fetch, depends, params }) => {
-  depends(dependz.draft);
-  const req = ebs({ fetch, path: `/app/${params.game}/${params.mode}/fantasy/${params.draft}` });
-  const data = await (params.mode && params.draft === 'new' ?
-    news.getOrAwait(params.mode, req.get)
-  : req.get<Server.EBS.Draft<'get'>>());
-  return data;
+const newz: Partial<Record<string, Server.EBS.Draft<'get'>>> = {};
+export const load: PageLoad = async opts => {
+  const req = ebs(opts);
+  return (async mode => (mode ? (newz[mode] ??= await req.get()) : req.get()))(
+    opts.untrack(() => opts.params.draft === 'new' && opts.params.mode)
+  );
 };

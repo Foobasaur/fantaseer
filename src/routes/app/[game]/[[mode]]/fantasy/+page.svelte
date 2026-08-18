@@ -2,8 +2,7 @@
 import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { gg, stats } from '$lib/core/games/games';
-import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
-import { dependz } from '$lib/svelted/app';
+import { usePubSub } from '$lib/common/twitch/svelted/twitch.svelte';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
@@ -41,7 +40,7 @@ const overview = $derived.by(() => {
 
 const draft = ({ mode = params.mode, draft = 'new' } = {}) => `/app/${params.game}/${mode}/fantasy/${draft}`;
 
-usePubSub({ '*': _ => category && invalidate(dependz.pickaroo) }, 'events:created');
+usePubSub({ '*': _ => category && invalidate(data.sourcee) }, 'events:created');
 </script>
 
 <Header />

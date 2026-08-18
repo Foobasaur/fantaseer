@@ -1,3 +1,4 @@
+const kappa = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 const truncate = (text: string, length = 9, ellipsis = '...') =>
   text.length > length ? text.slice(0, length - ellipsis.length) + ellipsis : text;
 const eq = (a: string | undefined, b: string, sensitive = false) =>
@@ -6,7 +7,7 @@ const eqludes = (a: string | undefined, b: string, sensitive = false) =>
   sensitive ? a?.includes(b) : a?.toLowerCase().includes(b.toLowerCase());
 const eqstart = (a: string | undefined, b: string, sensitive = false) =>
   sensitive ? a?.startsWith(b) : a?.toLowerCase().startsWith(b.toLowerCase());
-export { eq, eqludes, eqstart, truncate };
+export { kappa, eq, eqludes, eqstart, truncate };
 
 // Format score: numbers ≥1000 become "1.2k". Optional icon prefix for flair.
 export const format = (score: number, max = 1000, fix = 'k') => (score >= max ? (score / max).toFixed(1) + fix : score);

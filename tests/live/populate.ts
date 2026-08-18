@@ -6,9 +6,10 @@
  * picks already match real events, observer rows so those matches land in the "perfect pick" bucket, and
  * pickaroos resolved against real events so the pickems carry real hits and misses.
  *
- * No pre-existing row is ever updated or deleted, and games, categories and players are only ever read. Every
- * row this writes is stamped `meta.seed = <tag>` and every seeded identity uses `<tag>` as its `platform`, so
- * `purge()` can take exactly this data back out again.
+ * No pre-existing row is ever updated or deleted, and games, categories and players are only ever read — see
+ * "Local mode" below for the one place that is relaxed, and why it is safe there. Every row this writes is
+ * stamped `meta.seed = <tag>` and every seeded identity uses `<tag>` as its `platform`, so `purge()` can take
+ * exactly this data back out again.
  *
  * The one exception to "reads player data, never writes it" is bootstrapping: a mode with *zero* events can
  * carry no scored drafts, because scoring needs real events to match against. So a category holding nothing
@@ -16,9 +17,22 @@
  * family — Battlegrounds is its own family, the constructed modes share one. A mode that already has live
  * events is never topped up: real activity is never diluted. See SEED_BOOTSTRAP.
  *
+ * ── Local mode ──────────────────────────────────────────────────────────────────────────────────────────
+ * A live database already holds a game, its modes, a broadcaster and that broadcaster's play history; a fresh
+ * `docker compose up` holds none of it, so there is nothing for the audience to sit on. Local mode builds that
+ * floor first (see ensureFoundation) and then runs the *same* planner and writer as a live run, so the local
+ * app shows what the live seed produces. It is armed by SEED_LOCAL=1 or by VITE_TARGET=mock, needs no
+ * LIVE_SEED, and refuses any DATABASE_URL that is not a loopback host. Because everything under it is this
+ * script's own work, local mode is the one place games, categories and the broadcaster are written — and
+ * purged. It is the only mode that deletes rows it did not create in the same run.
+ *
  * ── Workflow ────────────────────────────────────────────────────────────────────────────────────────────
- *   terminal 1:  bash .scripts/rds.sh <stage>          # opens the SSH tunnel, prints DATABASE_URL
- *   terminal 2:  DATABASE_URL="<printed>" LIVE_SEED=1 npm run db:populate
+ *   live:   terminal 1:  bash .scripts/rds.sh <stage>  # opens the SSH tunnel, prints DATABASE_URL
+ *           terminal 2:  DATABASE_URL="<printed>" LIVE_SEED=1 npm run db:populate
+ *
+ *   local:  terminal 1:  npm run db:start              # the compose.yaml postgres on :5433
+ *           terminal 2:  npm run db:push               # schema, once
+ *           terminal 3:  npm run db:populate:local     # purges and rebuilds; then: npm run dev:bang
  *
  * ── Knobs (all optional except the two above) ───────────────────────────────────────────────────────────
  *   SEED_DRY=1            plan + report, write nothing
@@ -36,8 +50,12 @@
  *   SEED_LEAD_HOURS       how far ahead of the newest event a draft is backdated (default 13)
  *   SEED_BOOTSTRAP        "auto" (default) fills every mode holding zero events; "off" fills none;
  *                         or a comma list of modes, e.g. "Wild,Arena" — still only if they hold zero events
- *   SEED_BOOTSTRAP_EVENTS synthetic events per bootstrapped mode (default 250)
+ *   SEED_BOOTSTRAP_EVENTS synthetic events per bootstrapped mode, and per mode of the local foundation (250)
  *   SEED_BOOTSTRAP_DAYS   days of history those events are spread across (default 14)
+ *   SEED_LOCAL=1          target the local dev DB and build the foundation a live DB already has. Implied by
+ *                         VITE_TARGET=mock; SEED_LOCAL=0 turns it back off. LIVE_SEED is not required here.
+ *   SEED_LOCAL_CHANNEL    the broadcaster's twitch id (default "174152420" — the channel_id that the dev
+ *                         fallback in src/lib/server/auth.ts hands out, which is how ebs resolves the player)
  *   SEED_GAME             only seed this game code, e.g. "HS"
  *   SEED_PLAYERS          only seed these player ids, e.g. "3,7"
  *   SEED_RNG              PRNG seed — same value reproduces the same names and picks (default "doodly-doo")
@@ -68,6 +86,8 @@ export type Db = ReturnType<typeof drizzle>;
 
 export type Config = {
   url: string;
+  local: boolean;
+  channelId: string;
   tag: string;
   viewers: number;
   draftsPerViewer: number;
@@ -89,13 +109,59 @@ export type Config = {
   purge: 'no' | 'yes' | 'only';
 };
 
-/** Both switches are deliberate: nothing runs against a live DB by accident. */
-export const isArmed = (env: NodeJS.ProcessEnv = process.env) => Boolean(env.DATABASE_URL) && env.LIVE_SEED === '1';
+/** The compose.yaml postgres, and the default DATABASE_URL everything else in the repo falls back to. */
+export const LOCAL_URL = 'postgres://root:mysecretpassword@localhost:5433/local';
+
+/** Mirrors MODES in src/lib/core/games/HS/types.d.ts, which is a declaration file and carries no runtime value. */
+export const LOCAL_MODES = ['Standard', 'Arena', 'Wild', 'Battlegrounds'] as const;
+
+const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '[::1]', '0.0.0.0']);
+
+/** The one thing standing between "seed my dev box" and "seed production", so it is a host check, not a name check. */
+export const isLoopback = (url: string) => {
+  try {
+    return LOOPBACK.has(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+};
+
+/** VITE_TARGET=mock is how the dev server is started, so it doubles as the signal to target the dev database. */
+export const isLocal = (env: NodeJS.ProcessEnv = process.env) =>
+  env.SEED_LOCAL ? !['0', 'no', 'off', 'false'].includes(env.SEED_LOCAL.toLowerCase()) : env.VITE_TARGET === 'mock';
+
+/** Both live switches are deliberate: nothing runs against a live DB by accident. Local needs neither. */
+export const isArmed = (env: NodeJS.ProcessEnv = process.env) =>
+  isLocal(env) || (Boolean(env.DATABASE_URL) && env.LIVE_SEED === '1');
+
+/**
+ * `VITE_TARGET=mock vite dev` reads DATABASE_URL through $env/dynamic/private — that is, out of `.env` — so the
+ * populator has to read the same file or it would seed a different database than the one the dev server talks
+ * to. Shell values still win over the file, exactly as they do for vite. Falls back to process.env alone if
+ * vite cannot be loaded, which only costs the `.env` lookup.
+ */
+export const environ = async (): Promise<NodeJS.ProcessEnv> => {
+  try {
+    const { loadEnv } = await import('vite');
+    return { ...loadEnv('development', process.cwd(), ''), ...process.env };
+  } catch {
+    return process.env;
+  }
+};
 
 export const readConfig = (env: NodeJS.ProcessEnv = process.env): Config => {
-  if (!env.DATABASE_URL)
+  const local = isLocal(env);
+  const url = env.DATABASE_URL || (local ? LOCAL_URL : '');
+
+  if (!url)
     throw new Error('DATABASE_URL is required — run `bash .scripts/rds.sh <stage>` and reuse the URL it prints.');
-  if (env.LIVE_SEED !== '1')
+  if (local && !isLoopback(url))
+    throw new Error(
+      `Local mode refuses "${url.replace(/(\/\/[^:/@]*:)[^@]*@/, '$1***@')}" — it is not a loopback host. Local mode ` +
+        'builds and deletes games, categories and a broadcaster, which is only ever safe on a disposable dev DB. ' +
+        'Unset SEED_LOCAL and VITE_TARGET to seed a remote database the live way (LIVE_SEED=1).'
+    );
+  if (!local && env.LIVE_SEED !== '1')
     throw new Error('LIVE_SEED=1 is required — this writes to whatever DATABASE_URL points at, live included.');
 
   const num = (key: string, fallback: number) => {
@@ -106,7 +172,9 @@ export const readConfig = (env: NodeJS.ProcessEnv = process.env): Config => {
   };
 
   return {
-    url: env.DATABASE_URL,
+    url,
+    local,
+    channelId: env.SEED_LOCAL_CHANNEL || '174152420',
     tag: env.SEED_TAG || 'doodly',
     viewers: num('SEED_VIEWERS', 12),
     draftsPerViewer: num('SEED_DRAFTS', 2),
@@ -275,6 +343,262 @@ export const profiles: Profile[] = [
 
 /** Mirrors `hs.scores` in src/lib/core/games/HS/hs.server.ts — kept local so this script never boots the game module. */
 export const weights = { observed: 90, picked: 30, unpicked: 10, win: 50, lose: 2 } as const;
+
+// ============================================================
+// LOCAL FOUNDATION: the floor a live DB already has
+// ============================================================
+
+/** Battlegrounds is its own shape — heroes, placements — so it never donates to a constructed mode, or vice versa. */
+const family = (mode: string) => (mode === 'Battlegrounds' ? 'bg' : 'constructed');
+
+/**
+ * Card-bearing eventables only. The ones api/events/player/+server.ts routes to `player_pickaroo` instead
+ * (OnGameStart, OnLobbyReady, OnTurnStart) are deliberately absent: those open a pickaroo, they are not events.
+ */
+const EVENTABLES: Record<'constructed' | 'bg', readonly string[]> = {
+  constructed: [
+    'OnPlayerDraw',
+    'OnPlayerPlay',
+    'OnPlayerGet',
+    'OnPlayerMulligan',
+    'OnPlayerPlayToGraveyard',
+    'OnOpponentPlay',
+    'OnOpponentSecretTriggered'
+  ],
+  bg: ['OnRoundPlacement', 'OnPlayerPlay', 'OnPlayerGet', 'OnPlayerMinionAttack']
+};
+
+/**
+ * How many distinct cards the synthetic broadcaster is treated as owning per mode. Drawing 250 events out of
+ * Wild's several thousand legal cards would give almost every event its own pickable, which is nothing like a
+ * streamer replaying a handful of decks — and it is repetition that gives pickaroo decoys and miss-picks
+ * something to be wrong about.
+ */
+const COLLECTION = 48;
+
+export type Foundation = {
+  gameId: number;
+  categories: { id: number; mode: string }[];
+  playerId: number;
+  events: number;
+  reused: boolean;
+  notes: string[];
+};
+
+/**
+ * The pickables the app can actually render. `hs.pickables(mode)` is `cards.filter(c => legal[mode].includes(c.id))`,
+ * so a legal id only counts once it has survived CDN()'s de-duplication — anything else comes back undefined from
+ * module.fromPickable, and the UI silently drops the card, the draft row, or the whole pickaroo.
+ *
+ * Imported dynamically so a live run never pays for (or trips over) the 45MB card cache it has no use for.
+ */
+const cardPool = async (rand: Rando) => {
+  const { default: CDN } = await import('$lib/core/games/HS/common/cdn');
+  const contents = await CDN();
+  const known = new Set(contents.cards.map(c => c.id));
+  return new Map<string, string[]>(
+    LOCAL_MODES.map(mode => [mode, rand.sample(contents[mode].filter(id => known.has(id)), COLLECTION)])
+  );
+};
+
+/**
+ * `viewer.id` and `player.id` are GENERATED ALWAYS identities whose sequences outlive a purge, so a second local
+ * run would start handing out 13, 14, … That matters because the dev fallback in src/lib/server/auth.ts signs you
+ * in as `Viewer({ id: 1 })`, and ebs.configure reads the broadcaster's own rows as `player.id`. Only ever run
+ * against an empty table, so it can never renumber a row anything already points at.
+ */
+const restart = async (db: Db, table: 'viewer' | 'player') => {
+  const [row] = await db.select({ total: sql<number>`COUNT(*)::int` }).from(table === 'viewer' ? viewers : players);
+  if (row?.total) return false;
+  await db.execute(
+    table === 'viewer' ?
+      sql`ALTER TABLE "viewer" ALTER COLUMN "id" RESTART WITH 1`
+    : sql`ALTER TABLE "player" ALTER COLUMN "id" RESTART WITH 1`
+  );
+  return true;
+};
+
+/**
+ * Builds what a live database already has and a fresh one does not: the HS game row, its four modes, the
+ * broadcaster the dev auth fallback resolves to, and that broadcaster's play history. Everything above this —
+ * viewers, drafts, picks, observers, pickaroos, pickems — is left to readLive/planSeed/writeSeed, unchanged, so
+ * local and live produce the same shape of audience.
+ *
+ * Idempotent: each piece is created only if it is missing, and a database that already has all four is returned
+ * as it stands. Every row it writes is stamped `meta.seed = <tag>` like the rest, so purge takes it back out.
+ */
+export const ensureFoundation = async (db: Db, cfg: Config): Promise<Foundation> => {
+  if (cfg.gameCode && cfg.gameCode !== 'HS')
+    throw new Error(`Local mode can only build the HS foundation — SEED_GAME="${cfg.gameCode}" has no card pool to draw from.`);
+
+  const rand = rando(`${cfg.rng}:foundation`);
+  const stamp = { seed: cfg.tag };
+  const notes: string[] = [];
+
+  // ── what is already there ────────────────────────────────────────────────────────────────────────────
+  const [found] = await db.select().from(games).where(eq(games.code, 'HS'));
+  const existing = found ? await db.select().from(categories).where(eq(categories.gameId, found.id)) : [];
+  const [broadcaster] = await db
+    .select({ id: players.id })
+    .from(players)
+    .innerJoin(identities, eq(identities.id, players.identityId))
+    .where(and(eq(identities.platform, 'twitch'), eq(identities.platformId, cfg.channelId)));
+  const played = new Set(
+    broadcaster ?
+      (
+        await db
+          .select({ categoryId: events.categoryId })
+          .from(events)
+          .where(eq(events.playerId, broadcaster.id))
+          .groupBy(events.categoryId)
+      ).map(row => row.categoryId)
+    : []
+  );
+
+  const wantModes = LOCAL_MODES.filter(mode => !existing.some(c => c.mode === mode));
+  const wantEvents = LOCAL_MODES.filter(mode => {
+    const category = existing.find(c => c.mode === mode);
+    return !category || !played.has(category.id);
+  });
+
+  const gaps = [
+    !found && 'the HS game row',
+    wantModes.length > 0 && `${wantModes.length} mode(s) (${wantModes.join(', ')})`,
+    !broadcaster && `the broadcaster twitch:${cfg.channelId}`,
+    wantEvents.length > 0 && `play history for ${wantEvents.join(', ')}`
+  ].filter((gap): gap is string => Boolean(gap));
+
+  // A dry run writes nothing, and there is nothing to plan against until the floor exists.
+  if (cfg.dry && gaps.length)
+    throw new Error(
+      `SEED_DRY=1 has nothing to plan against — this database is still missing ${gaps.join(', ')}. Run once ` +
+        'without SEED_DRY to build the local foundation, then dry-run against it.'
+    );
+
+  // Before the early return, not after: a purge can empty the viewer table without touching anything else here,
+  // and writeSeed still wants its first viewer to be #1.
+  if (!cfg.dry && (await restart(db, 'viewer')))
+    notes.push('viewer ids restarted at 1 — the dev fallback signs you in as #1');
+
+  if (found && broadcaster && !wantModes.length && !wantEvents.length)
+    return {
+      gameId: found.id,
+      categories: existing.map(c => ({ id: c.id, mode: c.mode })),
+      playerId: broadcaster.id,
+      events: 0,
+      reused: true,
+      notes: [...notes, `reused the foundation already in place — game #${found.id}, player #${broadcaster.id}`]
+    };
+
+  // ── game + modes ─────────────────────────────────────────────────────────────────────────────────────
+  let game = found;
+  if (!game) {
+    [game] = await db
+      .insert(games)
+      .values({ name: 'Hearthstone', code: 'HS', description: 'Digital collectible card game', meta: stamp })
+      .returning();
+    notes.push(`minted the HS game row (#${game.id})`);
+  }
+
+  const minted =
+    wantModes.length ?
+      await db
+        .insert(categories)
+        .values(wantModes.map(mode => ({ gameId: game.id, mode, meta: stamp })))
+        .returning()
+    : [];
+  if (minted.length) notes.push(`minted ${minted.length} mode(s): ${minted.map(c => c.mode).join(', ')}`);
+  const all = [...existing, ...minted].filter(c => (LOCAL_MODES as readonly string[]).includes(c.mode));
+
+  // ── broadcaster ──────────────────────────────────────────────────────────────────────────────────────
+  let playerId = broadcaster?.id;
+  if (playerId == null) {
+    if (await restart(db, 'player')) notes.push('player ids restarted at 1 — /configure reads the broadcaster as #1');
+
+    // The identity may already exist as a viewer's: (platform, platformId) is unique, so attach to it rather than
+    // trying to mint a second one.
+    const [reusable] = await db
+      .select({ id: identities.id })
+      .from(identities)
+      .where(and(eq(identities.platform, 'twitch'), eq(identities.platformId, cfg.channelId)));
+
+    let identityId = reusable?.id;
+    if (identityId == null) {
+      const [user] = await db.insert(users).values({}).returning({ id: users.id });
+      // Shape mirrors ebs.configure's $Player upsert: identities.meta.player holds the Helix user.
+      const [made] = await db
+        .insert(identities)
+        .values({
+          userId: user.id,
+          platform: 'twitch',
+          platformId: cfg.channelId,
+          meta: {
+            ...stamp,
+            player: {
+              id: cfg.channelId,
+              login: 'fantaseer_local',
+              display_name: 'Fantaseer Local',
+              profile_image_url: AVATARS[0],
+              offline_image_url: '',
+              description: 'Seeded broadcaster — tests/live/populate.ts',
+              broadcaster_type: 'affiliate',
+              type: '',
+              view_count: 0,
+              created_at: new Date().toISOString()
+            }
+          }
+        })
+        .returning({ id: identities.id });
+      identityId = made.id;
+    }
+
+    const [row] = await db
+      .insert(players)
+      .values({ identityId, meta: { ...stamp, username: 'Fantaseer Local' } })
+      .returning({ id: players.id });
+    playerId = row.id;
+    notes.push(`minted the broadcaster twitch:${cfg.channelId} as player #${playerId}`);
+  }
+
+  // ── play history ─────────────────────────────────────────────────────────────────────────────────────
+  const pool = wantEvents.length ? await cardPool(rand) : new Map<string, string[]>();
+  const span = cfg.bootstrapDays * 24 * 60 * 60 * 1000;
+  const anchor = Date.now();
+  const rows: (typeof events.$inferInsert)[] = [];
+  const filled: string[] = [];
+
+  for (const mode of wantEvents) {
+    const category = all.find(c => c.mode === mode)!;
+    const pickables = pool.get(mode) ?? [];
+    if (!pickables.length) {
+      notes.push(`${mode} has no hydratable cards in the CDN cache — skipped, so its pages stay empty.`);
+      continue;
+    }
+    filled.push(mode);
+    const eventables = EVENTABLES[family(mode)];
+    for (let i = 0; i < cfg.bootstrapEvents; i++)
+      rows.push({
+        categoryId: category.id,
+        playerId,
+        eventable: rand.choice(eventables),
+        pickable: rand.choice(pickables),
+        // Spread across the recent past, oldest first, so drafts have somewhere to be backdated to.
+        createdAt: new Date(anchor - span + Math.floor(((i + rand.next()) / cfg.bootstrapEvents) * span)),
+        meta: { ...stamp, base: true, mode }
+      });
+  }
+  for (const batch of chunks(rows, 2000)) await db.insert(events).values(batch);
+  if (rows.length) notes.push(`minted ${rows.length} events across ${filled.length} mode(s): ${filled.join(', ')}`);
+
+  return {
+    gameId: game.id,
+    categories: all.map(c => ({ id: c.id, mode: c.mode })),
+    playerId,
+    events: rows.length,
+    reused: false,
+    notes
+  };
+};
 
 // ============================================================
 // READ: what the live DB already holds
@@ -500,9 +824,6 @@ const draftedAt = (pair: Pair, profile: Profile, nth: number, rand: Rando, leadH
   const cut = pair.events[Math.min(pair.events.length - 1, Math.floor(pair.events.length * fraction))];
   return new Date(Math.max(oldest, Math.min(cut.createdAt.getTime() - 60_000, lead)));
 };
-
-/** Battlegrounds is its own shape — heroes, placements — so it never donates to a constructed mode, or vice versa. */
-const family = (mode: string) => (mode === 'Battlegrounds' ? 'bg' : 'constructed');
 
 /**
  * A mode holding zero events can hold no scored drafts either, so it gets synthetic events modelled on a
@@ -1006,7 +1327,10 @@ export const writeSeed = async (db: Db, plan: Plan, cfg: Config): Promise<Writte
 // PURGE — seeded rows only, identified by the tag
 // ============================================================
 
-export type Purged = Record<'users' | 'events' | 'drafts' | 'picks' | 'observers' | 'pickaroos' | 'pickems', number>;
+export type Purged = Record<
+  'users' | 'events' | 'drafts' | 'picks' | 'observers' | 'pickaroos' | 'pickems' | 'categories' | 'games',
+  number
+>;
 
 export const purgeSeed = async (db: Db, cfg: Config): Promise<Purged> => {
   const tagged = (meta: PgColumn) => sql`${meta}->>'seed' = ${cfg.tag}`;
@@ -1023,10 +1347,13 @@ export const purgeSeed = async (db: Db, cfg: Config): Promise<Purged> => {
     // has interacted with a bootstrapped mode since seeding, that interaction cascades out with these rows.
     const goneEvents = await tx.delete(events).where(tagged(events.meta)).returning({ id: events.id });
 
+    // Seeded viewers carry the tag as their platform. The local broadcaster cannot — ebs resolves it as a real
+    // `twitch` identity — so it is found by the same meta.seed stamp everything else here is found by. Only this
+    // populator ever writes that key, on either side.
     const seededIdentities = await tx
       .select({ userId: identities.userId })
       .from(identities)
-      .where(eq(identities.platform, cfg.tag));
+      .where(cfg.local ? sql`${identities.platform} = ${cfg.tag} OR ${tagged(identities.meta)}` : eq(identities.platform, cfg.tag));
     const goneUsers = seededIdentities.length
       ? await tx
           .delete(users)
@@ -1039,6 +1366,12 @@ export const purgeSeed = async (db: Db, cfg: Config): Promise<Purged> => {
           .returning({ id: users.id })
       : [];
 
+    // Local only: the game and its modes are ours to have made, so a purge really does empty the dev DB. On a
+    // live DB they are pre-existing rows this script only ever reads, and the tag can never be on them.
+    const goneCategories =
+      cfg.local ? await tx.delete(categories).where(tagged(categories.meta)).returning({ id: categories.id }) : [];
+    const goneGames = cfg.local ? await tx.delete(games).where(tagged(games.meta)).returning({ id: games.id }) : [];
+
     return {
       users: goneUsers.length,
       events: goneEvents.length,
@@ -1046,7 +1379,9 @@ export const purgeSeed = async (db: Db, cfg: Config): Promise<Purged> => {
       picks: gonePicks.length,
       observers: goneObservers.length,
       pickaroos: gonePickaroos.length,
-      pickems: gonePickems.length
+      pickems: gonePickems.length,
+      categories: goneCategories.length,
+      games: goneGames.length
     };
   });
 };
@@ -1058,6 +1393,40 @@ export const purgeSeed = async (db: Db, cfg: Config): Promise<Purged> => {
 const pad = (value: unknown, width: number, left = false) => {
   const text = String(value);
   return left ? text.padStart(width) : text.padEnd(width);
+};
+
+const redact = (url: string) => url.replace(/(\/\/[^:/@]*:)[^@]*@/, '$1***@');
+
+export const describeFoundation = (foundation: Foundation, cfg: Config) => {
+  const lines = [
+    `🧱 local floor  ${redact(cfg.url)}`,
+    `    game        HS #${foundation.gameId} · ${foundation.categories.map(c => c.mode).join(', ')}`,
+    `    broadcaster player #${foundation.playerId} · twitch:${cfg.channelId}`,
+    foundation.reused ?
+      '    history     already in place — nothing minted'
+    : `    history     ${foundation.events} synthetic events over ${cfg.bootstrapDays} days`
+  ];
+  for (const note of foundation.notes) lines.push(`    · ${note}`);
+  return lines.join('\n');
+};
+
+/**
+ * The dev fallback in src/lib/server/auth.ts signs in as `Viewer({ id: 1 })` and resolves the broadcaster from a
+ * hardcoded channel_id, so whether the seed is visible at all comes down to those two ids. Say so plainly rather
+ * than leaving a dev to wonder why a freshly populated app looks empty.
+ */
+export const describeMock = (plan: Plan, written: Written, cfg: Config) => {
+  const seat = written.viewerIds.indexOf(1);
+  const viewer = seat >= 0 ? plan.viewers[seat] : undefined;
+  return [
+    '🖥️  npm run dev:bang  → http://localhost:5173/app/HS',
+    viewer ?
+      `    you are     viewer #1 "${viewer.username}" (${viewer.profile.type}) on the seeded channel`
+    : `    ⚠ the dev fallback signs in as viewer #1, which is not one of the ${written.viewers} this run wrote ` +
+      `(#${written.viewerIds[0]}–#${written.viewerIds[written.viewerIds.length - 1]}), so the app will look empty. ` +
+      'Re-run `npm run db:populate:local`, which purges first and lets the ids restart at 1.',
+    `    broadcaster twitch:${cfg.channelId}`
+  ].join('\n');
 };
 
 export const describeLive = (live: Live, cfg: Config) => {
@@ -1074,7 +1443,7 @@ export const describeLive = (live: Live, cfg: Config) => {
   );
 
   const lines = [
-    `🛰️  live source  ${live.games.map(g => g.code).join(', ')} · ${live.categories.length} categories · ${live.players.length} players`,
+    `${cfg.local ? '🗄️  local source' : '🛰️  live source'}  ${live.games.map(g => g.code).join(', ')} · ${live.categories.length} categories · ${live.players.length} players`,
     `    events      ${live.events}${live.truncated ? ` (capped at SEED_EVENT_LIMIT=${cfg.eventLimit})` : ''} across ${live.pairs.length} player+category pairs`,
     Number.isFinite(span.min) ?
       `    window      ${new Date(span.min).toISOString()} → ${new Date(span.max).toISOString()}`

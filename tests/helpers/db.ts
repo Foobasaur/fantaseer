@@ -13,7 +13,7 @@ import {
   viewers
 } from '$lib/server/db/.sql/tables';
 import { db } from '../setup';
-import { type DB } from '@';
+import { type Server } from '@';
 
 // ============================================================
 // CLEANUP
@@ -84,10 +84,10 @@ export const insertCategories = async (categoryList: CategoryInsert[]) =>
 // VIEWERS & PLAYERS
 // ============================================================
 
-export type ViewerInsert = DB.Infertable<'Insert'>['viewers'];
-export type PlayerInsert = DB.Infertable<'Insert'>['players'];
+export type ViewerInsert = Server.DB.Infertable<'Insert'>['viewers'];
+export type PlayerInsert = Server.DB.Infertable<'Insert'>['players'];
 
-export const insertIdentioty = async (values: DB.Infertable<'Insert'>['identities']) => {
+export const insertIdentioty = async (values: Server.DB.Infertable<'Insert'>['identities']) => {
   const [inserted] = await db.insert(identities).values(values).returning();
   return inserted;
 };
@@ -110,7 +110,7 @@ export const insertPlayers = async (playerList: PlayerInsert[]) => db.insert(pla
 // EVENTS
 // ============================================================
 
-export type EventInsert = DB.Infertable<'Insert'>['events'];
+export type EventInsert = Server.DB.Infertable<'Insert'>['events'];
 
 export const insertEvents = async (eventList: EventInsert[]) => db.insert(events).values(eventList).returning();
 
@@ -118,8 +118,8 @@ export const insertEvents = async (eventList: EventInsert[]) => db.insert(events
 // DRAFTS & PICKS
 // ============================================================
 
-export type DraftInsert = DB.Infertable<'Insert'>['drafts'];
-export type PickInsert = DB.Infertable<'Insert'>['picks'];
+export type DraftInsert = Server.DB.Infertable<'Insert'>['drafts'];
+export type PickInsert = Server.DB.Infertable<'Insert'>['picks'];
 
 export const insertDrafts = async (draftList: Omit<DraftInsert, 'meta'>[]) =>
   db
@@ -137,7 +137,7 @@ export const insertPicks = async (pickList: Omit<PickInsert, 'meta'>[]) =>
 // OBSERVERS
 // ============================================================
 
-export type ObserverInsert = DB.Infertable<'Insert'>['observers'];
+export type ObserverInsert = Server.DB.Infertable<'Insert'>['observers'];
 
 export const insertObservers = async (observerList: Omit<ObserverInsert, 'meta'>[]) =>
   db
@@ -146,7 +146,7 @@ export const insertObservers = async (observerList: Omit<ObserverInsert, 'meta'>
     .returning();
 
 export const insertObserversBatched = async (observerList: Omit<ObserverInsert, 'meta'>[], batchSize = 20000) => {
-  const results: DB.Infertable['observers'][] = [];
+  const results: Server.DB.Infertable['observers'][] = [];
   for (let i = 0; i < observerList.length; i += batchSize) {
     const batch = observerList.slice(i, i + batchSize);
     const inserted = await insertObservers(batch);

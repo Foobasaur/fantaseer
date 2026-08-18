@@ -1,5 +1,5 @@
 <script lang="ts">
-import { numbaz } from '$lib';
+import { is } from "$lib/utilz/numbaz";
 
 interface Props {
   loading?: boolean;
@@ -56,7 +56,7 @@ let { currentTab = $bindable(), error = $bindable(), loading, heading, stats, ta
         <div class="stat px-3 py-2 xs:px-4">
           <!-- <div class="stat-title hidden text-xs xs:block">{stat.title}</div> -->
           <div
-            class="tooltip tooltip-left stat-value text-sm xs:text-lg {numbaz.is(idx) ? 'text-primary' : 'text-secondary'}"
+            class="tooltip tooltip-left stat-value text-sm xs:text-lg {is(idx) ? 'text-primary' : 'text-secondary'}"
             data-tip={stat.title}>
             {stat.value}
           </div>

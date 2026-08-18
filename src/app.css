@@ -10,20 +10,30 @@
 
 @custom-variant xs (@media (width >= 26rem));
 
+/* wide-AND-tall gates for the landing page: width breakpoints alone span 360px-tall landscape
+   phones to 4K monitors, so anything spending VERTICAL budget gates on height too.
+   sm-tall arms the one-viewport lock (locked content measures ~750px at compact tier → 760px
+   threshold); xl-tall/xxl-tall arm the big-card tiers (~825px content → 832px threshold).
+   Declaration order matters — later custom variants win where stacked on one element. */
+@custom-variant sm-tall (@media (width >= 40rem) and (height >= 47.5rem));
+@custom-variant xl-tall (@media (width >= 80rem) and (height >= 52rem));
+@custom-variant xxl-tall (@media (width >= 96rem) and (height >= 52rem));
+
 @utility page-content {
   @apply mx-auto space-y-3 ml-1.5 -mr-1 my-2 p-1;
 }
 
-/* shared shape/behavior for the homepage's icon CTA buttons; `group` stays literal on
-   each element since group-* variants target that class name directly, not whatever
-   this utility expands to */
+/* shared shape/behavior for the homepage's CTA buttons — applied to the <a> itself so the
+   whole padded pill is clickable; `group` stays literal on each element since group-* variants
+   target that class name directly, not whatever this utility expands to */
 @utility cta-pill {
-  @apply inline-flex items-center rounded-xl p-3 font-semibold transition duration-300 ease-out hover:-translate-y-0.5 has-focus-visible:ring-2 has-focus-visible:ring-offset-2 has-focus-visible:ring-offset-[#0c0418] motion-reduce:transition-none;
+  @apply inline-flex items-center rounded-xl p-3 font-semibold outline-hidden transition-[translate,background-color,border-color,color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c0418] motion-reduce:transition-none motion-reduce:hover:translate-y-0;
 }
 
-/* the two "ghost" (outlined) CTA buttons, layered on top of cta-pill */
+/* the "ghost" (outlined) CTA buttons, layered on top of cta-pill; the fill is a near-opaque
+   dark so canvas motes drifting behind can't collide with the icon/label */
 @utility cta-pill-ghost {
-  @apply border border-white/15 bg-white/4 text-white backdrop-blur hover:bg-white/8;
+  @apply border border-white/20 bg-[#170b2a]/75 text-white backdrop-blur-sm hover:bg-[#221240]/80;
 }
 
 @utility hs-icon {

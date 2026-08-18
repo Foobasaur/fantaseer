@@ -1,5 +1,5 @@
 <script lang="ts">
-import { foobonic } from '$lib/svelted/app';
+import { foobonic } from '$lib/common/app';
 import type { Snippet } from 'svelte';
 
 interface Props {

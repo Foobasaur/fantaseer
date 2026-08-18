@@ -1,5 +1,5 @@
 <script lang="ts">
-import { useAuthListener } from '$lib/core/twitch/svelted/twitch.svelte';
+import { useAuthListener } from '$lib/common/twitch/svelted/twitch.svelte';
 
 let { children } = $props();
 const store = useAuthListener();

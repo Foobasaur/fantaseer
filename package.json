@@ -1,8 +1,8 @@
 {
   "name": "fantaseer",
-  "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
+  "private": true,
   "scripts": {
     "build": "vite build",
     "build:ext": "node .scripts/build-ext.js",
@@ -12,6 +12,7 @@
     "ext:build": "npm run build:ext && npm run ext:zip",
     "db:start": "docker compose up",
     "db:push": "drizzle-kit push",
+    "db:push:local": "drizzle-kit push --config=drizzle.local.ts",
     "db:export": "drizzle-kit export --config=drizzle.local.ts",
     "db:generate": "drizzle-kit generate --config=drizzle.local.ts",
     "db:generate:seed": "drizzle-kit generate --config=drizzle.local.ts --custom --name=seed",
@@ -31,34 +32,37 @@
     "test:seed": "SKIP_SETUP=1 vitest run tests/seed/all",
     "db:populate": "vitest run tests/live/populate",
     "db:populate:dry": "SEED_DRY=1 vitest run tests/live/populate",
-    "db:populate:purge": "SEED_PURGE=only vitest run tests/live/populate"
+    "db:populate:purge": "SEED_PURGE=only vitest run tests/live/populate",
+    "db:populate:local": "SEED_LOCAL=1 SEED_PURGE=1 vitest run tests/live/populate",
+    "db:populate:local:dry": "SEED_LOCAL=1 SEED_DRY=1 vitest run tests/live/populate",
+    "db:populate:local:purge": "SEED_LOCAL=1 SEED_PURGE=only vitest run tests/live/populate"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^7.0.1",
     "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.57.0",
-    "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "@sveltejs/kit": "^2.70.2",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tailwindcss/forms": "^0.5.11",
-    "@tailwindcss/typography": "^0.5.19",
-    "@tailwindcss/vite": "^4.2.2",
-    "@types/node": "^24",
-    "@types/pg": "^8.20.0",
-    "daisyui": "^5.5.19",
+    "@tailwindcss/typography": "^0.5.20",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@types/pg": "^8.21.0",
+    "daisyui": "^5.7.16",
     "drizzle-kit": "^1.0.0-beta.21",
     "glob": "^13.0.5",
     "postgres": "^3.4.9",
     "sst-linux-x64": "^4.7.1",
-    "svelte": "^5.55.2",
-    "svelte-check": "^4.4.6",
+    "svelte": "^5.56.8",
+    "svelte-check": "^4.7.5",
     "tailwindcss": "^4.2.2",
-    "typescript": "^6.0.2",
-    "vite": "^8.0.7",
-    "vitest": "^4.1.4"
+    "typescript": "^6.0.3",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "drizzle-orm": "^1.0.0-beta.21",
-    "pg": "^8.20.0",
-    "sst": "4.7.1",
+    "pg": "^8.23.0",
+    "sst": "4.17.1",
     "svelte-kit-sst": "2.43.5"
   }
 }

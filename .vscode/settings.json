@@ -13,5 +13,11 @@
   "prettier.experimentalOperatorPosition": "end",
   "prettier.svelteBracketNewLine": false,
   "prettier.svelteIndentScriptAndStyle": false,
-  "debug.javascript.autoAttachFilter": "always"
+  "js/ts.preferences.organizeImports": {
+    "caseFirst": "lower",
+    "typeOrder": "last"
+  },
+  "files.exclude": {
+    "**/.git": false
+  }
 }

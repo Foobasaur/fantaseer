@@ -1,11 +1,13 @@
 import { init as Games } from '$lib/core/games/games.server';
+import { hs } from '$lib/core/games/HS/hs.server';
 import { providers } from '$lib/server/auth';
 import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit';
 import { gzipSync } from 'node:zlib';
 
 // const ALLOWED_ORIGIN = ['Access-Control-Allow-Origin', `https://${env.TWITCH_EXTENSION_CLIENT_ID}.ext-twitch.tv`];
 export const init: ServerInit = async () => {
-  if (process.env.VITE_TARGET !== 'extension') await Games();
+  if (process.env.VITE_TARGET === 'extension') return;
+  else Games([hs]);
 };
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -25,6 +27,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 // Sentry.init({/*...*/})
 export const handleError: HandleServerError = async ({ error, event, status, message }) => {
+  if (event.url.pathname === '/favicon.ico') return;
+
   const errorId = crypto.randomUUID();
 
   // example integration with https://sentry.io/
