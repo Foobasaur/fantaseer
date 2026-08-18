@@ -4,14 +4,13 @@ import { create } from '$lib/core/games/HS/impl/fantasy/draft/svelted/store.svel
 import { checker, PREFIXER } from '$lib/utilz/morph';
 import { eqludes } from '$lib/utilz/stringz';
 
-import empty from '$lib/assets/empty.png';
 import cardpack from '$lib/assets/hs/icons/icon_cardpack.png';
 import Deck from '$lib/core/games/HS/impl/fantasy/draft/svelted/ui/Deck.svelte';
 import Slider from '$lib/core/games/HS/impl/fantasy/draft/svelted/ui/controls/Slider.svelte';
 import Cardio from '$lib/svelted/ui/actions/buttons/Card.svelte';
 import Selecto from '$lib/svelted/ui/inputs/selects/Box.svelte';
 import Radio from '$lib/svelted/ui/inputs/selects/Radio.svelte';
-import Empty from '$lib/svelted/ui/layout/Empty.svelte';
+import ChunkedList from '$lib/svelted/ui/layout/ChunkedList.svelte';
 import type { HS, FantasyDraftPageData as PageData, Server } from '@';
 
 // STATE:
@@ -35,6 +34,7 @@ const Filter = (mechanic: strumbol) =>
       checker(mechanic, c.mechanics) ||
       checker(mechanic, c.referencedTags)
   );
+  const items = $derived(Filter(store?.filter?.mechanic || PREFIXER));
 </script>
 
 {#snippet Pickles(picks: HS.Card[])}
@@ -117,16 +117,17 @@ const Filter = (mechanic: strumbol) =>
 
       <!-- Card Grid -->
       <div class="flex flex-wrap justify-center gap-0">
-        {#each Filter(store.filter.mechanic) as card (card.id)}
-          {@const count = store.picks.filter(p => p.id === card.id)?.length}
-          <Cardio
-            class={card.type === 'HERO' ? `[&_img]:-mb-5` : `[&_img]:-mb-9`}
-            img={{ src: store.rules.display(card) }}
-            badge={!count ? '' : 'x' + count}
-            disabled={!store.canAdd(card)}
-            onclick={() => store?.picks.push(card)} />
-          <!-- <pre>{JSON.stringify(card, null, 2)}</pre> -->
-        {:else}<Empty src={empty} tagline="Ribbit?" />{/each}
+        <ChunkedList {items} chunk={9} preload={0}>
+          {#snippet row(card)}
+            {@const count = store!.picks.filter(p => p.id === card.id)?.length}
+            <Cardio
+              class={card.type === 'HERO' ? `[&_img]:-mb-5` : `[&_img]:-mb-9`}
+              img={{ src: store!.rules.display(card) }}
+              badge={!count ? '' : 'x' + count}
+              disabled={!store?.canAdd(card)}
+              onclick={() => store?.picks.push(card)} />
+          {/snippet}
+        </ChunkedList>
       </div>
     {/if}
   </div>

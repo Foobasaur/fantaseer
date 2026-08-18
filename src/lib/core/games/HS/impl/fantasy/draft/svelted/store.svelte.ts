@@ -33,11 +33,15 @@ export const create = (mode: HS.Mode | (string & {}), pool: HS.Card[] | { id: st
     get rules() { return rules; },
     get validation() { return rules.validate(session.picks); },
     canAdd: (candidate: HS.Card) => rules.canAdd(session.picks, candidate),
-    check: () =>
-      session.pool.filter(
+    check: () => {
+      console.log('check', Date.now());
+      const f = session.pool.filter(
         c => rules.check(session.filter, c).every(Boolean) &&
         (session.filter.search.length < 4 ||
-          [c.rarity, c.name, c.flavor, c.text].some(field => eqludes(String(field), session.filter.search)))),
+          [c.rarity, c.name, c.flavor, c.text].some(field => eqludes(String(field), session.filter.search))))
+      console.log('check', Date.now());
+      return f
+        },
     clear: () => delete pending[mode]
   };
 };
