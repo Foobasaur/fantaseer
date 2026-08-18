@@ -21,11 +21,11 @@ export const faster = (length: number, act: (i: number) => void) => {
   let live = true;
   const timer = setTimeout(() => {
     (async () => {
-      for (let i = 0, t = performance.now(); live && i < length; i++) {
-        if (!(i & 31) && performance.now() - t > 3) {
-          await (scheduler?.yield() ?? new Promise(r => setTimeout(r)));
-          t = performance.now();
-        }
+      // Yield on an item stride, not an elapsed-time budget: the reactive flush after each yield does the
+      // heavy part (mounting the components the acts pushed), and it isn't covered by timing the acts —
+      // a 3ms act budget let hundreds of items pile into one 200ms+ flush.
+      for (let i = 0; live && i < length; i++) {
+        if (i && !(i & 63)) await (scheduler?.yield() ?? new Promise(r => setTimeout(r)));
         act(i);
       }
     })();

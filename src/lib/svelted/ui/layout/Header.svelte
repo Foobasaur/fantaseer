@@ -17,7 +17,7 @@ interface Props {
   }>;
   currentTab?: string;
 }
-let { currentTab = $bindable(), error = $bindable(), loading, heading, stats, tabs }: Props = $props();
+let { currentTab = $bindable(), error = $bindable(), loading = $bindable(), heading, stats, tabs }: Props = $props();
 // const { title, icon, tagline } = $derived.by(foobonic);
 </script>
 

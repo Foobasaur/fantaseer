@@ -1,5 +1,6 @@
 <script lang="ts">
-import { page } from '$app/state';
+import { untrack } from 'svelte';
+
 import { create } from '$lib/core/games/HS/impl/fantasy/draft/svelted/store.svelte';
 import { checker, PREFIXER } from '$lib/utilz/morph';
 import { eqludes } from '$lib/utilz/stringz';
@@ -14,27 +15,29 @@ import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import type { HS, FantasyDraftPageData as PageData, Server } from '@';
 
 // STATE:
-let category = $state<Server.DB.Infertable['categories']>();
-let store = $state<ReturnType<typeof create>>();
 let filtering = $state(false);
 
 // PROPS:
-let { error = $bindable(), data }: { data: R3place<PageData, 'req', Awaited<PageData['req']>>; error?: string } = $props();
-// const pickables = $derived(((data.pickables || []) as HS.Card[]).sort((a, b) => a.dbfId - b.dbfId));
-$effect(() => {
-  category ||= data.categories.find(c => c.mode === page.params.mode);
-  store = category && create(category.mode, data.req.pickables);
-});
-
-// FILTERED CARDS: Apply filtration based on selected filters
-const Filtered = $derived(store?.session.filtered ?? []);
+interface Props {
+  category: Server.DB.Infertable['categories'];
+  data: R3place<PageData, 'req', Awaited<PageData['req']>>;
+  error?: string;
+}
+let { error = $bindable(), category, data }: Props = $props();
+const store = $derived(
+  untrack(() =>
+    create(
+      category.mode,
+      (data.req.pickables as HS.Card[]).sort((a, b) => a.dbfId - b.dbfId)
+    )
+  )
+);
+const Filtered = $derived(store.session.filtered);
 const Filter = (mechanic: string) =>
-    Filtered.filter(
-        c =>
-          checker(mechanic, c.mechanics) ||
-          checker(mechanic, c.referencedTags) ||
-          eqludes(c.text, `<b>${mechanic.toLowerCase()}`)
-      );
+  Filtered.filter(
+    c =>
+      checker(mechanic, c.mechanics) || checker(mechanic, c.referencedTags) || eqludes(c.text, `<b>${mechanic.toLowerCase()}`)
+  );
 </script>
 
 {#snippet Pickles(picks: HS.Card[])}
@@ -51,11 +54,11 @@ const Filter = (mechanic: string) =>
 
   <!-- Main Content -->
   <div class="drawer-content">
-    {#if store && store.validate.valid}
+    {#if store.validate.valid}
       <!-- Show confirm UI when draft is complete -->
       <div class="page-content">
         {@render Pickles(store.session.picks)}
-        <button class="btn btn-primary w-full" onclick={async () => (error = await store?.submit())}>Confirm</button>
+        <button class="btn btn-primary w-full" onclick={async () => (error = await store.submit())}>Confirm</button>
       </div>
     {:else if store}
       <!-- Sticky header with draft.filters -->
@@ -78,29 +81,29 @@ const Filter = (mechanic: string) =>
           <!-- Content shown when <details> is open — {#if} gated so the mechanics collection (a Filter()
                sweep per key) is not recomputed on every streamed-in chunk while the panel is closed -->
           {#if filtering}
-          <Radio class="flex my-0.5" {...store.options.radials} bind:selected={store.session.filter.radials} />
+            <Radio class="flex my-0.5" {...store.options.radials} bind:selected={store.session.filter.radials} />
 
-          <div class="join mb-1 flex items-stretch justify-center">
-            <input
-              type="text"
-              placeholder="Search"
-              class="flex flex-col items-center justify-center text-center input input-sm w-full"
-              bind:value={store.session.filter.search} />
-            <Selecto collection={store.options.draftables} bind:selected={store.session.filter.set} />
-            {#if store.options.types}
-              <Selecto collection={store.options.types.card} bind:selected={store.session.filter.card} />
+            <div class="join mb-1 flex items-stretch justify-center">
+              <input
+                type="text"
+                placeholder="Search"
+                class="flex flex-col items-center justify-center text-center input input-sm w-full"
+                bind:value={store.session.filter.search} />
+              <Selecto collection={store.options.draftables} bind:selected={store.session.filter.set} />
+              {#if store.options.types}
+                <Selecto collection={store.options.types.card} bind:selected={store.session.filter.card} />
+                <Selecto
+                  collection={store.options.types[store.session.filter.card as keyof typeof store.options.types]}
+                  bind:selected={store.session.filter[store.session.filter.card as keyof typeof store.session.filter]} />
+              {/if}
               <Selecto
-                collection={store.options.types[store.session.filter.card as keyof typeof store.options.types]}
-                bind:selected={store.session.filter[store.session.filter.card as keyof typeof store.session.filter]} />
-            {/if}
-            <Selecto
-              collection={Object.fromEntries(
-                Object.entries(store.options.mechanics).filter(
-                  ([key]) => key === PREFIXER || key === store?.session.filter.mechanic || Filter(key)?.length
-                )
-              )}
-              bind:selected={store.session.filter.mechanic} />
-          </div>
+                collection={Object.fromEntries(
+                  Object.entries(store.options.mechanics).filter(
+                    ([key]) => key === PREFIXER || key === store?.session.filter.mechanic || Filter(key)?.length
+                  )
+                )}
+                bind:selected={store.session.filter.mechanic} />
+            </div>
           {/if}
         </details>
 
@@ -120,16 +123,16 @@ const Filter = (mechanic: string) =>
 
       <!-- Card Grid -->
       <div class="flex flex-wrap justify-center gap-0">
-      {#each Filter(store.session.filter.mechanic) as card (card.id)}
+        {#each Filter(store.session.filter.mechanic) as card (card.id)}
           {@const count = store.session.picks.filter(p => p.id === card.id)?.length}
           <Cardio
             class={card.type === 'HERO' ? `[&_img]:-mb-5` : `[&_img]:-mb-9`}
             img={{ src: store.rules.display(card) }}
             badge={!count ? '' : 'x' + count}
             disabled={!store.canAdd(card)}
-            onclick={() => store?.session.picks.push(card)} />
+            onclick={() => store.session.picks.push(card)} />
         {:else}<Empty />{/each}
-          <!-- <pre>{JSON.stringify(card, null, 2)}</pre> -->
+        <!-- <pre>{JSON.stringify(card, null, 2)}</pre> -->
       </div>
     {/if}
   </div>
@@ -139,7 +142,7 @@ const Filter = (mechanic: string) =>
     <label for="draft-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
     <div class="flex min-h-full w-69 flex-col bg-base-200">
       <label for="draft-drawer" class="btn absolute top-2 right-2 z-1 btn-circle btn-ghost btn-sm">✕</label>
-      {@render Pickles(store?.session.picks ?? [])}
+      {@render Pickles(store.session.picks)}
     </div>
   </div>
 </div>

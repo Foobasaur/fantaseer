@@ -9,12 +9,11 @@ import { faster } from '$lib/utilz/polly';
 import type { HS, Server } from '@';
 
 // CACHE
-const cache = $state<Partial<Record<string, { pool: HS.Card[]; filtered: HS.Card[]; picks: HS.Card[]; filter: Filter }>>>({});
+const cache = $state<Partial<Record<string, { filtered: HS.Card[]; picks: HS.Card[]; filter: Filter }>>>({});
 
 // STORE
-export const create = (mode: HS.Mode | (string & {}), pool: HS.Card[] | { id: string }[] = []) => {
+export const create = (mode: HS.Mode | (string & {}), pool: HS.Card[]) => {
   cache[mode] ||= {
-    pool: (pool as HS.Card[]).sort((a, b) => a.dbfId - b.dbfId),
     picks: [],
     filtered: [],
     filter: {
@@ -30,18 +29,17 @@ export const create = (mode: HS.Mode | (string & {}), pool: HS.Card[] | { id: st
     }
   };
   const session = cache[mode];
-  const raw = $state.snapshot(session.pool);
-  const { rules, options } = adopt(mode, raw);
+  const { rules, options } = adopt(mode, pool);
   $effect(() => {
     session.filtered = [];
     const filter = { ...session.filter };
     const needle = filter.search.toLowerCase();
     return faster(
-      raw.length,
+      pool.length,
       i =>
-        rules.check(filter, raw[i]).every(Boolean) &&
+        rules.check(filter, pool[i]).every(Boolean) &&
         (needle.length < 4 || options.haystacks[i].includes(needle)) &&
-        session.filtered.push(session.pool[i])
+        session.filtered.push(pool[i])
     );
   });
   return {
