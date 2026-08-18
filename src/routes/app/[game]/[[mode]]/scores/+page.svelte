@@ -2,7 +2,6 @@
 import { invalidate } from '$app/navigation';
 import { usePubSub } from '$lib/core/twitch/svelted/twitch.svelte';
 import { dependz } from '$lib/svelted/app';
-import ChunkedList from '$lib/svelted/ui/layout/ChunkedList.svelte';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
 import { emojiFace, eqludes, format } from '$lib/utilz/stringz';
@@ -163,25 +162,29 @@ usePubSub({ '*': _ => params.mode && invalidate(dependz.app) });
 
     <!-- ── Rest of leaderboard (rank 4+) ──────────────────────────────── -->
     {#if leaderboard?.length}
-      <!-- Chunked so a big leaderboard doesn't render (or reflow) all at once;
-           rewinds to the first chunk when the mode tab changes. -->
-      <ChunkedList
-        items={leaderboard}
-        reset={params.mode}
-        key={entry => entry.viewerId}
-        row={entry => ['tooltip tooltip-top', entry.viewerId === data.user.id && 'bg-accent/60']}>
-        {#snippet item(entry)}
-          <div class="tooltip-content text-left"></div>
-          <!-- ENHANCEMENT: rank number. Below #3 there were no visual
-               anchors — #4 and #11 looked identical at a glance. -->
-          <span class="w-8 text-center font-mono text-sm opacity-60">#{entry.rank}</span>
+      <!-- `overflow-hidden` clips the bg-primary highlight so the rounded
+           corners on the ul stay visible at the top/bottom rows. -->
+      <ul class="rounded-xl bg-base-200">
+        {#each leaderboard as entry (entry.viewerId)}
+          <li
+            class={[
+              'tooltip tooltip-top flex items-center gap-2 border-b border-base-300 p-3 transition-all',
+              'last:border-b-0 hover:bg-base-content/5',
+              'first:rounded-t-xl last:rounded-b-xl',
+              entry.viewerId === data.user.id && 'bg-accent/60'
+            ]}>
+            <div class="tooltip-content text-left"></div>
+            <!-- ENHANCEMENT: rank number. Below #3 there were no visual
+                 anchors — #4 and #11 looked identical at a glance. -->
+            <span class="w-8 text-center font-mono text-sm opacity-60">#{entry.rank}</span>
 
-          {@render Avatar(entry)}
-          {@render Username(entry)}
-          <span class="text-lg font-bold">{entry.score.weighted}</span>
-          {@render Breakdown(entry)}
-        {/snippet}
-      </ChunkedList>
+            {@render Avatar(entry)}
+            {@render Username(entry)}
+            <span class="text-lg font-bold">{entry.score.weighted}</span>
+            {@render Breakdown(entry)}
+          </li>
+        {/each}
+      </ul>
     {/if}
   </div>
 {/if}
