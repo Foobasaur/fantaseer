@@ -60,7 +60,7 @@ const Filter = (mechanic: strumbol) =>
     {:else if store}
       <!-- Sticky header with draft.filters -->
       <div
-        class="sticky top-0 pt-2 pl-1 pr-1 ml-1 mx-auto flex w-full flex-col z-9 isolate
+        class="sticky top-0 pt-2 pl-2 pr-1 mx-auto flex w-full flex-col z-9 isolate
          before:content-[''] before:absolute before:inset-0 before:-z-10 before:bg-base-200/80 before:shadow-2xl
          before:backdrop-brightness-90 before:mask-intersect
          before:mask-[linear-gradient(to_right,transparent,black_10%,black_90%,transparent),linear-gradient(to_bottom,transparent,black_0%,black_78%,transparent)]">
