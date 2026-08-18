@@ -34,6 +34,7 @@ export default function <R extends RouteId = RouteId>(opts: Pathname | ResolvedP
     init?: RequestInit
   ): Promise<
     [R] extends ['/configure/[kind]'] ? Server.EBS.Configure
+    : [R] extends ['/app/[game]/[[mode]]/fantasy/new'] ? Server.EBS.Draft<'new'>
     : [R] extends ['/app/[game]/[[mode]]/fantasy/[draft]'] ? Server.EBS.Draft<'get'>
     : [R] extends ['/app/[game]/[[mode]]/fantasy'] ? Server.EBS.Fantasy
     : [R] extends ['/app/[game]/[[mode]]/pickaroo'] ? Server.EBS.Predictachu
@@ -41,6 +42,7 @@ export default function <R extends RouteId = RouteId>(opts: Pathname | ResolvedP
       [
         | '/app/[game]/[[mode]]'
         | '/app/[game]/[[mode]]/fantasy'
+        | '/app/[game]/[[mode]]/fantasy/new'
         | '/app/[game]/[[mode]]/fantasy/[draft]'
         | '/app/[game]/[[mode]]/pickaroo'
         | '/app/[game]/[[mode]]/scores'
@@ -55,7 +57,7 @@ export default function <R extends RouteId = RouteId>(opts: Pathname | ResolvedP
       ...init,
       headers: {
         'Content-Type': 'application/json',
-        ...(browser && {
+        ...(twitch && {
           'x-ext-auth-jwt': twitch.auth?.token || '',
           'x-ext-ctx-mode': twitch.ctx?.mode || ''
         })

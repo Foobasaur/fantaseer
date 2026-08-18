@@ -5,13 +5,13 @@ type kvp<O = strumbol, K = strumbol> = readonly [O, K];
 
 /**
  * Utility types for type transformations such as:
- * - Replace: Replace specific keys in a type with a new type.
- * - R3place: Similar to Replace but allows for multiple keys and preserves other keys.
+ * - R3place: Replace specific keys in a type with a new type.
+ * - Replace: Similar to Replace but allows for multiple keys and preserves other keys.
  * - Rixclude: Exclude specific keys from a type and replace them with a new type.
  */
 type R3place<U, T extends keyof U, I> = Omit<U, T> & { [P in T]: I };
 type Rixclude<U, T extends keyof U, I> = Pick<U, Exclude<keyof U, T>> & { [P in T]: I };
-type R3place<U, T extends keyof U | string, I> = { [P in keyof U]: P extends T ? I : U[P] };
+type Replace<U, T extends keyof U | string, I> = { [P in keyof U]: P extends T ? I : U[P] };
 
 /**
  * type A = { x: number } & { y: string };

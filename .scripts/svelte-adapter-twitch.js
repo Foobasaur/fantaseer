@@ -28,6 +28,11 @@ export default function (options = {}) {
       for (const htmlFile of htmlFiles) {
         let html = readFileSync(htmlFile, 'utf-8');
 
+        // Inject the Twitch Extension Helper before any app scripts (required by all extensions)
+        if (!html.includes(TWITCH_HELPER)) {
+          html = html.replace('<head>', `<head>\n\t\t<script src="${TWITCH_HELPER}"></script>`);
+        }
+
         // Externalize inline scripts (Twitch CSP blocks inline scripts)
         const inlineScriptRegex = /<script(?![^>]*\bsrc\b)([^>]*)>([\s\S]*?)<\/script>/gi;
         let match;

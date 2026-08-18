@@ -5,16 +5,17 @@ import type { Server, Twitch } from '@';
 import { onMount } from 'svelte';
 import { Extension } from '../Extension';
 
-export const twitch = $state(new Extension());
+export const twitch = $state<toothy<Extension>>(import.meta.env.VITE_BANG === 'twitch' && new Extension());
 
 let viewer = $state<toothy<Twitch.Viewer>>();
 const authHander = async () => {
+  if (!twitch) return;
   return (viewer ||=
-    twitch.viewer.isLinked &&
     (await (h => ebs(resolve('/api/configure/[kind]', { kind: 'viewer' })).post<Twitch.Viewer>(h))(await twitch.Viewer())));
 };
 
 export const init = async () => {
+  if(!twitch) return;
   try {
     await waitFor(() => [twitch.auth, twitch.ctx, twitch.viewer].every(Boolean), {
       step: 300,
@@ -51,6 +52,7 @@ export const usePubSub = (
       (handler as (d: typeof data) => void)(data)
   }));
   onMount(() => {
+    if(!twitch) return;
     events.forEach(({ event, handler }) => twitch.on(event, handler));
     return () => events.forEach(({ event, handler }) => twitch.off(event, handler));
   });
@@ -58,14 +60,15 @@ export const usePubSub = (
 
 export const useAuthListener = () => {
   onMount(() => {
+    if(!twitch) return;
     twitch.on('authorized', authHander);
     return () => twitch.off('authorized', authHander);
   });
 
   // prettier-ignore
   return {
-    link: () => twitch.actions.requestIdShare(),
-    get linked() { return true || twitch.viewer.isLinked; },
+    link: () =>twitch && twitch.actions.requestIdShare(),
+    get linked() { return !twitch || twitch.viewer.isLinked; },
     get viewer() { return viewer; }
   };
 };

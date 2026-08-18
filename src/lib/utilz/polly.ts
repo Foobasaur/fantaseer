@@ -22,7 +22,7 @@ export const faster = (length: number, act: (i: number) => void) => {
   const timer = setTimeout(() => {
     (async () => {
       for (let i = 0, t = performance.now(); live && i < length; i++) {
-        if (!(i & 31) && performance.now() - t > 6) {
+        if (!(i & 31) && performance.now() - t > 3) {
           await (scheduler?.yield() ?? new Promise(r => setTimeout(r)));
           t = performance.now();
         }

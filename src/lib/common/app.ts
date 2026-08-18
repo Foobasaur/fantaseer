@@ -8,8 +8,8 @@ export const fabio = [
   { route: '/app/[game]/[[mode]]/scores', slug: 'scores', icon: '🏆' }
 ] as const;
 
-export const foobonic = (route?: (typeof fabio)[number]['route'] | (typeof fabio)[number]['slug']) => {
-  const id = route || page.route.id;
-  const item = fabio[fabio.findIndex(i => i.route === id || i.slug === id)] || fabio[0];
-  return { ...item, title: kappa(item.slug) };
-};
+// export const foobonic = (route?: (typeof fabio)[number]['route'] | (typeof fabio)[number]['slug']) => {
+//   const id = route || page.route.id;
+//   const item = fabio[fabio.findIndex(i => i.route === id || i.slug === id)] || fabio[0];
+//   return { ...item, title: kappa(item.slug) };
+// };

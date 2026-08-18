@@ -4,7 +4,6 @@ import { create } from '$lib/core/games/HS/impl/fantasy/draft/svelted/store.svel
 import { checker, PREFIXER } from '$lib/utilz/morph';
 import { eqludes } from '$lib/utilz/stringz';
 
-import empty from '$lib/assets/empty.png';
 import cardpack from '$lib/assets/hs/icons/icon_cardpack.png';
 import Deck from '$lib/core/games/HS/impl/fantasy/draft/svelted/ui/Deck.svelte';
 import Slider from '$lib/core/games/HS/impl/fantasy/draft/svelted/ui/controls/Slider.svelte';
@@ -17,24 +16,25 @@ import type { HS, FantasyDraftPageData as PageData, Server } from '@';
 // STATE:
 let category = $state<Server.DB.Infertable['categories']>();
 let store = $state<ReturnType<typeof create>>();
+let filtering = $state(false);
 
 // PROPS:
-let { error = $bindable(), data }: { data: PageData; error?: string } = $props();
+let { error = $bindable(), data }: { data: R3place<PageData, 'req', Awaited<PageData['req']>>; error?: string } = $props();
 // const pickables = $derived(((data.pickables || []) as HS.Card[]).sort((a, b) => a.dbfId - b.dbfId));
 $effect(() => {
   category ||= data.categories.find(c => c.mode === page.params.mode);
-  store = category && create(category.mode, data.pickables);
+  store = category && create(category.mode, data.req.pickables);
 });
 
 // FILTERED CARDS: Apply filtration based on selected filters
 const Filtered = $derived(store?.session.filtered ?? []);
-const Filter = (mechanic: strumbol) =>
-  Filtered.filter(
-    c =>
-      eqludes(c.text, `<b>${String(mechanic).toLowerCase()}`) ||
-      checker(mechanic, c.mechanics) ||
-      checker(mechanic, c.referencedTags)
-  );
+const Filter = (mechanic: string) =>
+    Filtered.filter(
+        c =>
+          checker(mechanic, c.mechanics) ||
+          checker(mechanic, c.referencedTags) ||
+          eqludes(c.text, `<b>${mechanic.toLowerCase()}`)
+      );
 </script>
 
 {#snippet Pickles(picks: HS.Card[])}
@@ -66,7 +66,7 @@ const Filter = (mechanic: strumbol) =>
          before:mask-[linear-gradient(to_right,transparent,black_10%,black_90%,transparent),linear-gradient(to_bottom,transparent,black_0%,black_78%,transparent)]">
         <Slider class="mb-2" type={store.rules.slider} bind:value={store.session.filter[store.rules.slider]} />
 
-        <details class="filter-details group">
+        <details class="filter-details group" bind:open={filtering}>
           <!-- Summary positioned where the old toggle button was -->
           <summary
             data-tip="Toggle Filterizers"
@@ -75,7 +75,9 @@ const Filter = (mechanic: strumbol) =>
             <span class="text-lg hidden group-open:inline">🔍</span>
           </summary>
 
-          <!-- Content shown when <details> is open -->
+          <!-- Content shown when <details> is open — {#if} gated so the mechanics collection (a Filter()
+               sweep per key) is not recomputed on every streamed-in chunk while the panel is closed -->
+          {#if filtering}
           <Radio class="flex my-0.5" {...store.options.radials} bind:selected={store.session.filter.radials} />
 
           <div class="join mb-1 flex items-stretch justify-center">
@@ -99,6 +101,7 @@ const Filter = (mechanic: strumbol) =>
               )}
               bind:selected={store.session.filter.mechanic} />
           </div>
+          {/if}
         </details>
 
         <!-- Draft drawer toggle button -->
@@ -125,7 +128,7 @@ const Filter = (mechanic: strumbol) =>
             badge={!count ? '' : 'x' + count}
             disabled={!store.canAdd(card)}
             onclick={() => store?.session.picks.push(card)} />
-        {:else}<Empty src={empty} tagline="Foo Baribbit?" />{/each}
+        {:else}<Empty />{/each}
           <!-- <pre>{JSON.stringify(card, null, 2)}</pre> -->
       </div>
     {/if}

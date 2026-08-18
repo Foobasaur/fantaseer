@@ -1,5 +1,5 @@
 <script lang="ts">
-import { foobonic } from '$lib/common/app';
+import empty from '$lib/assets/empty.png';
 import type { Snippet } from 'svelte';
 
 interface Props {
@@ -11,18 +11,16 @@ interface Props {
   class?: string;
   animate?: boolean;
 }
-let { children, src, ...props }: Props = $props();
-const { title, icon, tagline } = $derived({ ...foobonic(), ...props });
+let { children, src = empty, tagline = 'Foo Baa Ribbit?', ...props }: Props = $props();
 </script>
 
 <div class={['items-center justify-center text-center mt-9', props.class]}>
-  {#if src}<img {src} alt="Empty" class={['justify-self-center', props.animate && 'empty-animate']} />
-  {:else}
+  {#if props.icon}
     <div class="empty-rotate">
-      <div class={['mb-4 text-9xl empty-glow', props.animate && 'empty-animate']}>{icon}</div>
+      <div class={['mb-4 text-9xl empty-glow', props.animate && 'empty-animate']}>{props.icon}</div>
     </div>
-    <h3 class="mb-2 text-2xl font-semibold mt-6">{title}</h3>
-  {/if}
+    <h3 class="mb-2 text-2xl font-semibold mt-6">{props.title}</h3>
+  {:else}<img {src} alt="Empty" class={['justify-self-center', props.animate && 'empty-animate']} />{/if}
   <p class={['opacity-70', props.animate && 'empty-pulse']}>{tagline}</p>
   {@render children?.()}
 </div>

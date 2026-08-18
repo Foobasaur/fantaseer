@@ -110,15 +110,16 @@ export const draft = async () => {
       return { picks, events, observers, drafts, open };
     },
     get: async () => {
-      if (e.event.params.draft !== 'new') {
-        // Validate draft ownership and load picks.
-        const { drafts = [], picks = [], events, observers } = await eventy({ id: Number(e.event.params.draft) });
-        return {
-          events,
-          observers,
-          draft: { ...drafts[0], picks, pickables: module.fromPickable(picks.map(p => p.pickable)) }
-        };
-      } else return { pickables: module.pickables(category?.mode), draftables: module.draftables(category?.mode) };
+      // Validate draft ownership and load picks.
+      const { drafts = [], picks = [], events, observers } = await eventy({ id: Number(e.event.params.draft) });
+      return {
+        events,
+        observers,
+        draft: { ...drafts[0], picks, pickables: module.fromPickable(picks.map(p => p.pickable)) }
+      };
+    },
+    new: async () => {
+      return { pickables: module.pickables(category?.mode), draftables: module.draftables(category?.mode) };
     },
     post: async <T extends { id: string }>() => {
       const opts = (await e.event.request.json()) as { picks: T[] };

@@ -5,4 +5,4 @@ export type * from '$lib/server/types';
 export type * from './basic';
 
 export type { PageData as FantasyPageData } from '../routes/app/[game]/[[mode]]/fantasy/$types';
-export type { PageData as FantasyDraftPageData } from '../routes/app/[game]/[[mode]]/fantasy/[draft]/$types';
+export type { PageData as FantasyDraftPageData } from '../routes/app/[game]/[[mode]]/fantasy/new/$types';

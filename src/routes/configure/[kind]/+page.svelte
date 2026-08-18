@@ -1,6 +1,5 @@
 <script lang="ts">
 import ebs from '$lib/common/ebs';
-import empty from '$lib/assets/empty.png';
 import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import Header from '$lib/svelted/ui/layout/Header.svelte';
 import { kappa } from '$lib/utilz/stringz';
@@ -104,6 +103,6 @@ const error = $derived(
           <!-- <span class="text-xs opacity-60">#{entity.id}</span> -->
         </div>
       </div>
-    {:else}<Empty src={empty} tagline="Nope" />{/each}
+    {:else}<Empty />{/each}
   </div>
 </div>

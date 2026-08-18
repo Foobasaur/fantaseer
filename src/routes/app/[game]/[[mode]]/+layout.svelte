@@ -3,11 +3,10 @@ import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import { usePubSub } from '$lib/common/twitch/svelted/twitch.svelte';
-import { fabio, foobonic } from '$lib/common/app';
+import { fabio } from '$lib/common/app';
 import { kappa } from '$lib/utilz/stringz';
 
 let { data, params, children } = $props();
-let fabulous = $derived.by(foobonic);
 
 // ── Live updates ────────────────────────────────────────────────────────
 usePubSub({
@@ -47,7 +46,9 @@ to_top mask, new (30% / 94%):
           class="tab [&.tab-active]:font-semibold"
           class:tab-active={params.mode === mode}
           href={resolve(
-            page.route.id === '/app/[game]/[[mode]]/fantasy/[draft]' ? '/app/[game]/[[mode]]/fantasy' : fabulous.route,
+            page.route.id?.startsWith('/app/[game]/[[mode]]/fantasy/') ?
+              '/app/[game]/[[mode]]/fantasy'
+            : fabio[fabio.findIndex(i => i.route === page.route.id)].route,
             { game: params.game, mode: mode }
           )}>
           {mode}
@@ -62,7 +63,8 @@ to_top mask, new (30% / 94%):
 {#snippet Footer()}
   <div class="fab fab-flower">
     <button class="btn btn-circle btn-lg btn-info">
-      <span class="drop-shadow-[0_0_3px_rgba(0,0,0,1)] mb-0.5 text-xl">{fabulous.icon}</span>
+      <span class="drop-shadow-[0_0_3px_rgba(0,0,0,1)] mb-0.5 text-xl"
+        >{fabio[fabio.findIndex(i => i.route === page.route.id)]?.icon || fabio[0].icon }</span>
     </button>
     <span class="fab-close btn btn-circle btn-lg btn-error">⇲</span>
     {#each fabio as { slug, icon, route }}

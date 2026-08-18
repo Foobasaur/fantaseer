@@ -11,6 +11,26 @@ const props: {
   onclick: () => void;
 } = $props();
 const onclick = () => !props.disabled && props.onclick();
+
+// Tilt axis is set from pointer position instead of 8 hit-zone divs + :has() selectors: with :has() in
+// the stylesheet, every card streaming into the grid invalidated styles grid-wide and stuttered the hover
+// transition on the card under the pointer. Same 3x3 zone quantization as the old selectors.
+const zone = (v: number) => (v < 1 / 3 ? -1 : v > 2 / 3 ? 1 : 0);
+const tilt = (el: HTMLElement) => {
+  let rect: DOMRect;
+  const measure = () => (rect = el.getBoundingClientRect());
+  const move = (e: PointerEvent) =>
+    el.style.setProperty(
+      '--transform',
+      `${zone((e.clientY - rect.top) / rect.height)}, ${-zone((e.clientX - rect.left) / rect.width)}`
+    );
+  el.addEventListener('pointerenter', measure);
+  el.addEventListener('pointermove', move);
+  return () => {
+    el.removeEventListener('pointerenter', measure);
+    el.removeEventListener('pointermove', move);
+  };
+};
 </script>
 
 <div class="card-cv">
@@ -25,28 +45,19 @@ const onclick = () => !props.disabled && props.onclick();
       role="button"
       tabindex="0"
       onkeydown={e => e.key === 'Enter' && onclick()}
+      {@attach tilt}
       class={[!props.disabled && 'hover-glow cursor-pointer', 'relative rounded-2xl']}>
+      <!-- aspect-ratio reserves the box of the hearthstonejson 256x388 renders before load: without it every
+           unloaded img is 0x0, so each load reflows the whole grid and lazy-loading sees all cards as "near
+           the viewport" and fetches eagerly -->
       <figure class={`rounded-2xl ${props.img.w ?? 'w-63'}`}>
         <img
           src={props.img.src}
-          alt={props.img.alt ||
-            props.img.src
-              .split('/')
-              .at(-1)
-              ?.replace(/\.\w+$/, '') ||
-            props.img.src}
+          alt={props.img.alt || props.img.src}
           decoding="async"
           loading="lazy"
-          class="object-contain" />
+          class="object-contain w-full aspect-256/388" />
       </figure>
-      <div></div>
-      <div></div>
-      <div></div>
-      <div></div>
-      <div></div>
-      <div></div>
-      <div></div>
-      <div></div>
     </div>
     {#if props.overlay}
       <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -70,84 +81,20 @@ const onclick = () => !props.disabled && props.onclick();
   display: inline-grid;
   perspective: 75rem;
   --transform: 0, 0;
-  --ease: linear(0, 0.931 13.8%, 1.196 21.4%, 1.343 29.8%, 1.378 36%, 1.365 43.2%, 1.059 78%, 1);
+  /* the previous nested &:hover always won specificity, so this was the ease actually in effect */
+  --ease: linear(0, 0.708 15.2%, 0.927 23.6%, 1.067 33%, 1.12 41%, 1.13 50.2%, 1.019 83.2%, 1);
 }
 .hover-glow:hover {
   filter: drop-shadow(0 0 12px rgba(0, 255, 0, 0.6)) drop-shadow(0 0 24px rgba(255, 255, 255, 0.3));
   transition: filter 400ms ease-out;
 
-  > :nth-child(n + 2) {
-    isolation: isolate;
-    z-index: 1;
-    scale: 1.2;
-  }
-
-  > :first-child {
+  > figure {
     overflow: hidden;
-    grid-area: 1/1/4/4;
+    scale: 1.05;
     transform: rotate3d(var(--transform), 0, 10deg);
     transition:
       transform var(--ease) 500ms,
       scale var(--ease) 500ms;
-  }
-
-  &:hover {
-    --ease: linear(0, 0.708 15.2%, 0.927 23.6%, 1.067 33%, 1.12 41%, 1.13 50.2%, 1.019 83.2%, 1);
-    filter: drop-shadow(0 0 12px rgba(0, 255, 0, 0.6)) drop-shadow(0 0 24px rgba(255, 255, 255, 0.3));
-
-    > :first-child {
-      scale: 1.05;
-    }
-  }
-
-  > :nth-child(2) {
-    grid-area: 1/1/2/2;
-  }
-  > :nth-child(3) {
-    grid-area: 1/2/2/3;
-  }
-  > :nth-child(4) {
-    grid-area: 1/3/2/4;
-  }
-  > :nth-child(5) {
-    grid-area: 2/1/3/2;
-  }
-  > :nth-child(6) {
-    grid-area: 2/3/3/4;
-  }
-  > :nth-child(7) {
-    grid-area: 3/1/4/2;
-  }
-  > :nth-child(8) {
-    grid-area: 3/2/4/3;
-  }
-  > :nth-child(9) {
-    grid-area: 3/3/4/4;
-  }
-
-  &:has(> :nth-child(2):hover) {
-    --transform: -1, 1;
-  }
-  &:has(> :nth-child(3):hover) {
-    --transform: -1, 0;
-  }
-  &:has(> :nth-child(4):hover) {
-    --transform: -1, -1;
-  }
-  &:has(> :nth-child(5):hover) {
-    --transform: 0, 1;
-  }
-  &:has(> :nth-child(6):hover) {
-    --transform: 0, -1;
-  }
-  &:has(> :nth-child(7):hover) {
-    --transform: 1, 1;
-  }
-  &:has(> :nth-child(8):hover) {
-    --transform: 1, 0;
-  }
-  &:has(> :nth-child(9):hover) {
-    --transform: 1, -1;
   }
 }
 </style>
