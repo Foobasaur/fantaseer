@@ -108,12 +108,13 @@ const lazily = (node: HTMLElement) => {
 
 {#if head}
   <!-- z-9 keeps the sticky head under the layout's fab flower (z-10+) while
-       clearing page content; the negative margins undo `page-content`'s
-       padding so the blur runs edge to edge. -->
+       clearing page content. No padding or margin of its own: these elements
+       are direct children of `page-content`, which already owns the gutters
+       (`p-1`, `ml-1.5 -mr-1`) and the rhythm between them (`space-y-3`). -->
   <div
     class={[
       'flex flex-wrap items-center justify-between gap-2',
-      sticky && 'sticky top-0 z-9 -mx-1 bg-base-200/80 px-1 pt-1 pb-2 backdrop-blur-sm'
+      sticky && 'sticky top-0 z-9 bg-base-200/80 backdrop-blur-sm'
     ]}>
     {@render head()}
   </div>
@@ -138,7 +139,7 @@ const lazily = (node: HTMLElement) => {
 
   {#if remaining}
     <!-- Doubles as the observer target and the no-JS/no-IO escape hatch. -->
-    <div {@attach lazily} class="flex justify-center pt-1 pb-2">
+    <div {@attach lazily} class="flex justify-center">
       <button class="btn gap-2 btn-ghost btn-sm" onclick={() => (chunks += 1)}>
         <span class="loading loading-dots loading-xs"></span>
         {remaining} more
