@@ -3,9 +3,9 @@ import { $insert } from '$lib/server/db/kit';
 import { Viewer } from '$lib/server/db/queries/identity';
 import { chatters } from '$lib/server/twitch/api';
 import { authenticate } from '$lib/server/twitch/auth';
-import { PubSubServer } from '$lib/server/twitch/PubSubServer';
+import { PubSub } from '$lib/server/twitch/PubSub';
 import { catchy } from '$lib/utilz/polly';
-import type { DB } from '@';
+import type { Server } from '@';
 import { error } from '@sveltejs/kit';
 import { sql } from 'drizzle-orm';
 import { inspect } from 'util';
@@ -40,8 +40,8 @@ export const POST: RequestHandler = ({ request, url }) =>
       (await db.query.games.findFirst({ where: { code }, with: { categories: true } })) || faulted('Game not found');
     const { id: categoryId } = game.categories.find(c => c.mode === mode) || faulted(`Category not found for ${mode}} mode`);
 
-    const events: DB.Infertable<'Insert'>['events'][] = [];
-    const pickaroos: DB.Infertable<'Insert'>['pickaroos'][] = [];
+    const events: Server.DB.Infertable<'Insert'>['events'][] = [];
+    const pickaroos: Server.DB.Infertable<'Insert'>['pickaroos'][] = [];
     const payload = (await request.json()) as Payload[];
     console.log('Processing:', inspect({ payload }, { depth: null, colors: true }));
     for (const { eventable, pickables, meta } of payload) {
@@ -109,7 +109,7 @@ export const POST: RequestHandler = ({ request, url }) =>
       const resolved =
         triggers &&
         triggers.size &&
-        (r => r.rows as (DB.Infertable['pickems'] & { eventable: string; eventPickable: string })[])(
+        (r => r.rows as (Server.DB.Infertable['pickems'] & { eventable: string; eventPickable: string })[])(
           await tx.execute(sql`
               WITH resolved AS (
                 UPDATE player_pickaroo pp
@@ -137,7 +137,7 @@ export const POST: RequestHandler = ({ request, url }) =>
       };
     });
 
-    const evented: { [K in keyof DB.TEvent<DB.Tablekey>]?: DB.TEvent<DB.Tablekey>[K] | any } = {
+    const evented: { [K in keyof Server.DB.TEvent<Server.DB.Tablekey>]?: Server.DB.TEvent<Server.DB.Tablekey>[K] | any } = {
       ...(x.opened && x.opened.length && { 'pickaroos:updated': x.opened }),
       ...(x.inserted && x.inserted.length && { 'events:created': x.inserted }),
       ...(x.pickems.triggers && x.pickems.triggers.length && { 'pickems:updated': x.pickems })
@@ -153,6 +153,6 @@ export const POST: RequestHandler = ({ request, url }) =>
       if (observers && observers.length) evented['observers:created'] = observers;
     }
     console.log('Evented:', inspect({ evented }, { depth: null, colors: true }));
-    return await PubSubServer.I.broadcast(player.platformId, { events: Object.keys(evented) });
+    return await PubSub.I.broadcast(player.platformId, { events: Object.keys(evented) });
     // return evented;
   });

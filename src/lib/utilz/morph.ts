@@ -1,4 +1,3 @@
-export const kappa = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 export const Arrg = <T>(v: T | T[]): T[] => (Array.isArray(v) ? v : [v]);
 
 export const PREFIXER = '__Any__' as const;
@@ -14,6 +13,42 @@ export const checker = <T>(eq1: T | T[], eq2: T | T[], prefix = PREFIXER) => {
   return Arrg(eq2).some(e => set.has(e));
 };
 
+export const prettify = (key: string, MINOR = new Set(['a', 'an', 'and', 'at', 'in', 'of', 'on', 'or', 'the', 'to', 'vs'])) =>
+  key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w, i) => (i && MINOR.has(w.toLowerCase()) ? w.toLowerCase() : w[0].toUpperCase() + w.slice(1).toLowerCase()))
+    .join(' ');
+
+export const collect = <E, K extends string, V>(pool: E[], of: (entity: E) => Record<K, V>) => {
+  const acc: Partial<Record<K, Set<V>>> = {};
+  for (const card of pool)
+    for (const [key, value] of Object.entries(of(card)) as [K, V][]) {
+      const bucket = (acc[key] ??= new Set());
+      for (const v of Arrg(value)) if (v != null) bucket.add(v);
+    }
+  return acc;
+};
+
+export const defs = <T>(
+  label: string,
+  values: Iterable<T> = [],
+  name: (key: string) => string = prettify,
+  sort: null | ((a: [T, T], b: [T, T]) => number) = ([, la], [, lb]) => String(la).localeCompare(String(lb))
+) => {
+  const named = [...values].map(value => (v => [v, name(v) || prettify(v)])(String(value)) as [T, T]);
+  return {
+    [PREFIXER]: `Any ${label}`,
+    ...Object.fromEntries(sort ? named.sort(sort) : named)
+  };
+};
+
+export const drawable = (imgs: Record<string, string>, group: Record<string, string>) => ({
+  imgs,
+  collection: Object.keys(group).filter(key => imgs[key.toLowerCase()])
+});
+
 export const blobby = (o: object) => {
   const imgs = Object.entries(o).reduce(
     (acc, [path, module]) => {
@@ -25,61 +60,6 @@ export const blobby = (o: object) => {
   );
   return imgs;
 };
-
-export const timez = {
-  second: (seconds = 1) => seconds * 1000,
-  minute: (minutes = 1) => minutes * timez.second(60),
-  hour: (hours = 1) => hours * timez.minute(60),
-  day: (days = 1) => days * timez.hour(24)
-} as const;
-
-export const rando = {
-  range: (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min,
-  choice: <T>(arr: T[] | readonly T[]) => arr[Math.floor(Math.random() * arr.length)]
-} as const;
-
-export const timer = (createdAt: Date, timeBetween: number) => {
-  const now = new Date();
-  const next = new Date(createdAt.getTime() + timeBetween);
-  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-
-  const str = (dt: Date) => {
-    const time = dt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-    return (
-      dt.toDateString() === now.toDateString() ? `today at ${time}`
-      : dt.toDateString() === tomorrow.toDateString() ? `tomorrow at ${time}`
-      : dt.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-    );
-  };
-  return {
-    next,
-    nextStr: str(next),
-    str: str(createdAt)
-  };
-};
-
-/**
- * Checks if the specified key exists in the object and is not null or undefined.
- * ```ts
- * null    != null   // false
- * undefined != null // false  ← the magic
- * 0       != null   // true
- * ''      != null   // true
- * false   != null   // true
- * NaN     != null   // true
- * obj[key] !== null      // lets undefined through ❌
- * obj[key] !== undefined // lets null through ❌
- * obj[key] != null       // catches both ✓
- * ```
- */
-export const has =
-  <T, K extends keyof T>(key: K) =>
-  (obj: T): obj is T & { [P in K]-?: NonNullable<T[K]> } =>
-    obj[key] != null;
-export const hasnot =
-  <T, K extends keyof T>(key: K) =>
-  (obj: T): obj is T & { [P in K]: Extract<T[K], null | undefined> } =>
-    obj[key] == null;
 
 export const sumScalars = <T extends Record<string, unknown>>(acc: T, src: Partial<T>) => {
   for (const [key, value] of Object.entries(src)) {
@@ -104,3 +84,43 @@ export const sumScalars = <T extends Record<string, unknown>>(acc: T, src: Parti
   }
   return acc;
 };
+
+export const zipLeaves = <
+  A extends { [G in keyof A]: Record<keyof A[G], object> },
+  B extends { [G in keyof A]: Record<keyof A[G], object> }
+>(
+  a: A,
+  b: B
+): { [G in keyof A]: { [K in keyof A[G]]: A[G][K] & B[G][K & keyof B[G]] } } => {
+  const aa = a as unknown as Record<string, Record<string, object>>;
+  const bb = b as unknown as Record<string, Record<string, object>>;
+  return Object.fromEntries(
+    Object.entries(aa).map(([g, group]) => [
+      g,
+      Object.fromEntries(Object.entries(group).map(([k, v]) => [k, { ...v, ...bb[g]?.[k] }]))
+    ])
+  ) as never;
+};
+
+/**
+ * Checks if the specified key exists in the object and is not null or undefined.
+ * ```ts
+ * null    != null   // false
+ * undefined != null // false  ← the magic
+ * 0       != null   // true
+ * ''      != null   // true
+ * false   != null   // true
+ * NaN     != null   // true
+ * obj[key] !== null      // lets undefined through ❌
+ * obj[key] !== undefined // lets null through ❌
+ * obj[key] != null       // catches both ✓
+ * ```
+ */
+export const has =
+  <T, K extends keyof T>(key: K) =>
+  (obj: T): obj is T & { [P in K]-?: NonNullable<T[K]> } =>
+    obj[key] != null;
+export const hasnot =
+  <T, K extends keyof T>(key: K) =>
+  (obj: T): obj is T & { [P in K]: Extract<T[K], null | undefined> } =>
+    obj[key] == null;

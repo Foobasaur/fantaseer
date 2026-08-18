@@ -1,4 +1,8 @@
-import type { games, game, draft, pickaroo, configure } from '$lib/server/ebs';
+import type { tablez } from '$lib/server/db/client';
+import type { configure, draft, game, games, pickaroo } from '$lib/server/ebs';
+import type { SQL } from 'drizzle-orm';
+import type { AnyPgColumn, PgColumn } from 'drizzle-orm/pg-core';
+
 export namespace Server {
   namespace Auth {
     interface IAnonymous<Meta = unknown> {
@@ -20,6 +24,93 @@ export namespace Server {
     interface IAuthProvider<Meta, Jwt> {
       resolve(jwt?: string | null, mode?: string | null): Promise<toothy<User<Meta, Jwt>>>;
     }
+  }
+
+  namespace DB {
+    // Tables
+    type Tables = typeof tablez;
+    type Tablekey = keyof Tables;
+    type Infertable<K extends 'Select' | 'Insert' = 'Select'> = {
+      [O in Tablekey]: Tables[O][`$infer${K}`];
+    };
+    type Metabled<T extends Tablekey, meta extends unknown> = R3place<Infertable[T], 'meta', meta | undefined | null>;
+    type Viewer<T = never> = Metabled<
+      'viewers',
+      { username?: string; avatar?: string } & ([T] extends [never] ? {} : { [K in keyof T]?: T[K] })
+    >;
+
+    // Column builder - any valid column type that can be selected in a query
+    type Colmnuilder = PgColumn | SQL | SQL.Aliased | AnyPgColumn;
+
+    // Map selected columns to their types
+    type Selectuilder<S> = {
+      [K in keyof S]: S[K] extends Colmnuilder<infer U> ? U : unknown;
+    };
+
+    // Column condition - all possible ways to filter a column
+    type ColumnCondition<T> =
+      | T // Exact value (defaults to eq)
+      | ['isNull' | 'isNotNull'] // Unary: [isNull] or [isNotNull]
+      | ['between' | 'notBetween', T, T] // Range: [between, min, max]
+      | ['eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte', T] // Binary: [eq, value], [gt, value], etc.
+      | ['like' | 'notLike' | 'ilike' | 'notIlike', string] // Pattern: [like, '%foo%']
+      | ['inArray' | 'notInArray' | 'arrayContains' | 'arrayContained' | 'arrayOverlaps', T[]]; // Array: [inArray, [1, 2, 3]]
+    type Options<K extends Tablekey> = {
+      where?: {
+        [O in keyof Infertable[K]]?: ColumnCondition<Infertable[K][O]>;
+      };
+    } & {
+      select?: { [key: string]: Colmnuilder };
+      operato?: 'and' | 'or';
+      orderBy?: keyof Infertable[K] | Colmnuilder[];
+      groupBy?: keyof Infertable[K] | Colmnuilder[];
+      limit?: number;
+      offset?: number;
+    };
+
+    // EVENT TYPES
+    type EventAction = 'created' | 'updated' | 'deleted';
+
+    /**
+     * Payload varies by action
+     */
+    type EventPayload<T extends Tablekey, A extends EventAction, meta> =
+      A extends 'deleted' ? { id: number | string } : Metabled<T, meta>;
+
+    /**
+     * Generate events with correct payloads
+     * @template O - Table key
+     * @template T - If true, wraps payload in tuple for EventEmitter compatibility
+     */
+    type TEvent<O extends Tablekey, meta = unknown> = {
+      [K in EventAction as `${O}:${K}`]: EventPayload<O, K, meta>;
+    };
+    type TEventKey<K extends Tablekey> = keyof TEvent<K>;
+
+    /**
+     * Create a combined event map from multiple table keys
+     * Uses distributive conditional to properly expand the union
+     */
+    type TMultiEvent<T extends Tablekey, meta = unknown> = UnionToIntersection<T extends any ? TEvent<T, meta> : never>;
+
+    /**
+     * Discriminated union: each entry correlates event key with its payload type
+     * */
+    type FeedEntry<O extends Tablekey> = {
+      [K in keyof TMultiEvent<O>]?: {
+        event: K;
+        values?: TMultiEvent<O>[K];
+        payload?: any; // For compatibility with generic event handlers; can be typed more strictly if needed
+      };
+    }[keyof TMultiEvent<O>];
+
+    // in the DB namespace
+    type TBatch<T extends Tablekey> = { events: Array<TEventKey<T>>; payload?: any };
+
+    /** Extract table name from an event key like 'picks:created'
+  type TableFromKey<K extends string> = K extends `${infer T}:${EventAction}` ? T : never;*/
+    /** Extract all table keys from an event map type
+  type TablesOf<T> = TableFromKey<Extract<keyof T, string>>; */
   }
 
   /**
@@ -68,100 +159,4 @@ export namespace Server {
     // ---- Configurations -──────────────────────────────────────────────
     type Configure<M extends keyof ReturnType<typeof configure> = 'get'> = Returnz<Returnz<typeof configure>[M]>;
   }
-}
-
-import type { tablez } from '$lib/server/db/client';
-import type { InferSelectViewModel, SQL } from 'drizzle-orm';
-import type { PgColumn, AnyPgColumn } from 'drizzle-orm/pg-core';
-export namespace DB {
-  // ============================================
-  // Tables
-  // ============================================
-
-  export type Tables = typeof tablez;
-  export type Tablekey = keyof Tables;
-  export type Infertable<K extends 'Select' | 'Insert' = 'Select'> = {
-    [O in Tablekey]: Tables[O][`$infer${K}`];
-  };
-  export type Metabled<T extends Tablekey, meta extends unknown> = R3place<Infertable[T], 'meta', meta | undefined | null>;
-  type Viewer<T = never> = Metabled<
-    'viewers',
-    { username?: string; avatar?: string } & ([T] extends [never] ? {} : { [K in keyof T]?: T[K] })
-  >;
-  // ============================================
-  // Utility Types
-  // ============================================
-  export type Colmnuilder = PgColumn | SQL | SQL.Aliased | AnyPgColumn;
-
-  // Map selected columns to their types
-  export type Selectuilder<S> = {
-    [K in keyof S]: S[K] extends Colmnuilder<infer U> ? U : unknown;
-  };
-
-  // Column condition - all possible ways to filter a column
-  export type ColumnCondition<T> =
-    | T // Exact value (defaults to eq)
-    | ['isNull' | 'isNotNull'] // Unary: [isNull] or [isNotNull]
-    | ['between' | 'notBetween', T, T] // Range: [between, min, max]
-    | ['eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte', T] // Binary: [eq, value], [gt, value], etc.
-    | ['like' | 'notLike' | 'ilike' | 'notIlike', string] // Pattern: [like, '%foo%']
-    | ['inArray' | 'notInArray' | 'arrayContains' | 'arrayContained' | 'arrayOverlaps', T[]]; // Array: [inArray, [1, 2, 3]]
-  export type Options<K extends Tablekey> = {
-    where?: {
-      [O in keyof Infertable[K]]?: ColumnCondition<Infertable[K][O]>;
-    };
-  } & {
-    select?: { [key: string]: Colmnuilder };
-    operato?: 'and' | 'or';
-    orderBy?: keyof Infertable[K] | Colmnuilder[];
-    groupBy?: keyof Infertable[K] | Colmnuilder[];
-    limit?: number;
-    offset?: number;
-  };
-
-  // ============================================================================
-  // EVENT TYPES
-  // ============================================================================
-  type EventAction = 'created' | 'updated' | 'deleted';
-
-  /**
-   * Payload varies by action
-   */
-  type EventPayload<T extends Tablekey, A extends EventAction, meta> =
-    A extends 'deleted' ? { id: number | string } : Metabled<T, meta>;
-
-  /**
-   * Generate events with correct payloads
-   * @template O - Table key
-   * @template T - If true, wraps payload in tuple for EventEmitter compatibility
-   */
-  type TEvent<O extends Tablekey, meta = unknown> = {
-    [K in EventAction as `${O}:${K}`]: EventPayload<O, K, meta>;
-  };
-  type TEventKey<K extends Tablekey> = keyof TEvent<K>;
-
-  /**
-   * Create a combined event map from multiple table keys
-   * Uses distributive conditional to properly expand the union
-   */
-  type TMultiEvent<T extends Tablekey, meta = unknown> = UnionToIntersection<T extends any ? TEvent<T, meta> : never>;
-
-  /**
-   * Discriminated union: each entry correlates event key with its payload type
-   * */
-  type FeedEntry<O extends Tablekey> = {
-    [K in keyof TMultiEvent<O>]?: {
-      event: K;
-      values?: TMultiEvent<O>[K];
-      payload?: any; // For compatibility with generic event handlers; can be typed more strictly if needed
-    };
-  }[keyof TMultiEvent<O>];
-
-  // in the DB namespace
-  type TBatch<T extends Tablekey> = { events: Array<TEventKey<T>>; payload?: any };
-
-  /** Extract table name from an event key like 'picks:created'
-  type TableFromKey<K extends string> = K extends `${infer T}:${EventAction}` ? T : never;*/
-  /** Extract all table keys from an event map type
-  type TablesOf<T> = TableFromKey<Extract<keyof T, string>>; */
 }

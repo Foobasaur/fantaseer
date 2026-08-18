@@ -10,6 +10,7 @@ node_modules
 /.svelte-kit
 /.build
 **/*-bak
+response.json
 
 # Twitch Extension
 extension.zip

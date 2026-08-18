@@ -2,9 +2,9 @@
 // TYPES
 // ============================================================
 
-import Fetcher from '$lib/core/games/HS/api/cdn';
-import { rando } from '$lib/utilz/morph';
-import type { DB } from '@';
+import Fetcher from '$lib/core/games/HS/common/cdn';
+import { rando } from '$lib/utilz/numbaz';
+import type { Server } from '@';
 import {
   insertCategory,
   insertDrafts,
@@ -17,7 +17,7 @@ import {
   insertUser,
   insertViewer
 } from './db';
-import type { GameEventName } from '$lib/core/games/HS/types';
+import type { HS } from '$lib/core/games/HS/types';
 
 // ============================================================
 // CORE TYPES
@@ -49,7 +49,7 @@ export type ViewerProfileEntry = {
   profile: ViewerProfile;
 };
 
-export type PlayerEntry = DB.Infertable['players'];
+export type PlayerEntry = Server.DB.Infertable['players'];
 
 export type Counts = {
   playersPerCategory: number;
@@ -68,7 +68,7 @@ export type Counts = {
 // PROFILE CONFIGURATIONS
 // ============================================================
 
-export const gameEvents: GameEventName[] = [
+export const gameEvents: HS.GameEventName[] = [
   // Player events
   'OnPlayerDraw',
   'OnPlayerGet',
@@ -418,7 +418,7 @@ export const createEvents = async (
   pickables: Map<string, string[]>
 ) => {
   console.log('📊 Creating events...');
-  const eventList: DB.Infertable<'Insert'>['events'][] = [];
+  const eventList: Server.DB.Infertable<'Insert'>['events'][] = [];
 
   for (const [categoryId, category] of categoryMap) {
     for (const player of playerMap.get(categoryId)!) {
@@ -435,7 +435,7 @@ export const createEvents = async (
   }
 
   const inserted = await insertEvents(eventList);
-  const mapping = new Map<number, DB.Infertable['events'][]>();
+  const mapping = new Map<number, Server.DB.Infertable['events'][]>();
   for (const [categoryId] of categoryMap) mapping.set(categoryId, []);
   for (const e of inserted) mapping.get(e.categoryId)!.push(e);
 
@@ -447,7 +447,7 @@ export const createDraftsAndPicks = async (
   categoryMap: Map<number, CategoryEntry>,
   playerProfiles: Map<number, PlayerEntry[]>,
   viewerProfiles: ViewerProfileEntry[],
-  eventMap: Map<number, DB.Infertable['events'][]>,
+  eventMap: Map<number, Server.DB.Infertable['events'][]>,
   pickables: Map<string, string[]>
 ) => {
   console.log('📝 Creating drafts and picks...');
@@ -477,13 +477,13 @@ export const createDraftsAndPicks = async (
   const insertedDrafts = await insertDrafts(draftData.map(({ _profile, ...d }) => d));
 
   // Build mappings
-  const draftMapping = new Map<number, DB.Infertable['drafts'][]>();
+  const draftMapping = new Map<number, Server.DB.Infertable['drafts'][]>();
   for (const [categoryId] of categoryMap) draftMapping.set(categoryId, []);
   for (const draft of insertedDrafts) draftMapping.get(draft.categoryId)!.push(draft);
 
   // Create picks
   const pickData: { draftId: number; pickable: string }[] = [];
-  const pickMapping = new Map<number, DB.Infertable['picks'][]>();
+  const pickMapping = new Map<number, Server.DB.Infertable['picks'][]>();
 
   for (let i = 0; i < insertedDrafts.length; i++) {
     const draft = insertedDrafts[i];
@@ -512,7 +512,7 @@ export const createDraftsAndPicks = async (
 
 export const createObservers = async (
   viewerProfiles: ViewerProfileEntry[],
-  eventMap: Map<number, DB.Infertable['events'][]>
+  eventMap: Map<number, Server.DB.Infertable['events'][]>
 ) => {
   console.log('👁️ Creating observer relationships...');
 
@@ -529,7 +529,7 @@ export const createObservers = async (
 
   const inserted = await insertObserversBatched(observerData);
 
-  const mapping = new Map<number, DB.Infertable['observers'][]>();
+  const mapping = new Map<number, Server.DB.Infertable['observers'][]>();
   for (const { viewerId } of viewerProfiles) mapping.set(viewerId, []);
   for (const obs of inserted) mapping.get(obs.viewerId)!.push(obs);
 
@@ -546,10 +546,10 @@ export type SeedResult = {
   categoryMap: Map<number, CategoryEntry>;
   viewerProfiles: ViewerProfileEntry[];
   playerMap: Map<number, PlayerEntry[]>;
-  eventMap: Map<number, DB.Infertable['events'][]>;
-  draftMapping: Map<number, DB.Infertable['drafts'][]>;
-  pickMapping: Map<number, DB.Infertable['picks'][]>;
-  observerMap: Map<number, DB.Infertable['observers'][]>;
+  eventMap: Map<number, Server.DB.Infertable['events'][]>;
+  draftMapping: Map<number, Server.DB.Infertable['drafts'][]>;
+  pickMapping: Map<number, Server.DB.Infertable['picks'][]>;
+  observerMap: Map<number, Server.DB.Infertable['observers'][]>;
 };
 
 export const seedAll = async (): Promise<SeedResult> => {

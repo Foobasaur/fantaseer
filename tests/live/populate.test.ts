@@ -1,16 +1,22 @@
 /**
- * Runner for the live-DB populator. Deliberately inert unless both switches are set:
+ * Runner for the DB populator. Deliberately inert unless it is told which database it is aiming at:
  *
- *   terminal 1:  bash .scripts/rds.sh <stage>
- *   terminal 2:  DATABASE_URL="<printed>" LIVE_SEED=1 npm run db:populate
+ *   live:   terminal 1:  bash .scripts/rds.sh <stage>
+ *           terminal 2:  DATABASE_URL="<printed>" LIVE_SEED=1 npm run db:populate
  *
- * Without them every case skips, so a plain `vitest run` can never touch a live database. This never imports
- * tests/setup.ts or tests/helpers/* — those point at localhost:5433 and their global hooks can truncate tables.
+ *   local:  npm run db:populate:local            # SEED_LOCAL=1, loopback DATABASE_URL only
  *
- * After writing, it reads the rows back and checks the two claims that matter: the picks really do match real
- * events under summary.fantasy's rule, and the pickems really do resolve to the planned hits and misses.
+ * Without either every case skips, so a plain `vitest run` can never touch a database — with one deliberate
+ * exception: a shell that already exports VITE_TARGET=mock is a shell aimed at the dev database, and local mode
+ * arms itself there. This never imports tests/setup.ts or tests/helpers/* — those point at localhost:5433 and
+ * their global hooks can truncate tables.
+ *
+ * Local mode builds the floor a live DB already has (ensureFoundation) and then runs the identical plan/write
+ * path, so every assertion below covers both. After writing, it reads the rows back and checks the two claims
+ * that matter: the picks really do match real events under summary.fantasy's rule, and the pickems really do
+ * resolve to the planned hits and misses.
  */
-import { drafts, events, observers, pickaroos, pickems, picks, players } from '$lib/server/db/.sql/tables';
+import { drafts, events, identities, observers, pickaroos, pickems, picks, players } from '$lib/server/db/.sql/tables';
 import { and, eq, sql, type SQL } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
@@ -18,9 +24,15 @@ import {
   connect,
   countSeeded,
   describeForecast,
+  describeFoundation,
   describeLive,
+  describeMock,
   describePlan,
+  ensureFoundation,
+  environ,
   isArmed,
+  isLocal,
+  LOCAL_MODES,
   planSeed,
   purgeSeed,
   readConfig,
@@ -28,6 +40,7 @@ import {
   writeSeed,
   type Config,
   type Db,
+  type Foundation,
   type Live,
   type Plan,
   type Written
@@ -49,20 +62,22 @@ const foreign = (tag: string) => sql`${events.meta}->>'seed' IS DISTINCT FROM ${
 if (!armed)
   console.warn(
     '⏭️  tests/live/populate — skipped.\n' +
-      '    Open the tunnel with `bash .scripts/rds.sh <stage>`, then re-run with\n' +
-      '    DATABASE_URL="<the printed url>" LIVE_SEED=1'
+      '    live:  open the tunnel with `bash .scripts/rds.sh <stage>`, then re-run with\n' +
+      '           DATABASE_URL="<the printed url>" LIVE_SEED=1\n' +
+      '    local: npm run db:populate:local'
   );
 
-describe.skipIf(!armed)('live populate', () => {
+describe.skipIf(!armed)('populate', () => {
   let cfg: Config;
   let db: Db;
   let live: Live;
   let plan: Plan;
+  let foundation: Foundation | undefined;
   let written: Written | undefined;
-  let before = { events: 0, players: 0 };
+  let before = { events: 0, players: 0, seeded: 0 };
 
   beforeAll(async () => {
-    cfg = readConfig();
+    cfg = readConfig(await environ());
     db = connect(cfg.url);
 
     if (cfg.purge !== 'no') {
@@ -79,11 +94,19 @@ describe.skipIf(!armed)('live populate', () => {
           'or pick a fresh SEED_TAG.'
       );
 
+    // Local only, and before readLive: on a fresh dev DB there is no game, no broadcaster and no history to read.
+    if (cfg.local) {
+      foundation = await ensureFoundation(db, cfg);
+      console.log(describeFoundation(foundation, cfg));
+    }
+
     live = await readLive(db, cfg);
     plan = planSeed(live, cfg);
     before = {
       events: await count(db, events, foreign(cfg.tag)),
-      players: await count(db, players)
+      players: await count(db, players),
+      // Measured after the foundation, so the delta below is exactly what writeSeed adds.
+      seeded: await count(db, events, sql`${events.meta}->>'seed' = ${cfg.tag}`)
     };
 
     console.log(describeLive(live, cfg));
@@ -92,17 +115,48 @@ describe.skipIf(!armed)('live populate', () => {
 
   afterAll(async () => {
     if (plan?.forecast.length) console.log(describeForecast(plan));
-    if (written)
+    if (written) {
+      if (cfg.local) console.log(`\n${describeMock(plan, written, cfg)}`);
       console.log(
-        `\n♻️  to take it back out: DATABASE_URL="…" LIVE_SEED=1 SEED_TAG=${cfg.tag} npm run db:populate:purge\n`
+        cfg.local ?
+          `\n♻️  to take it back out: SEED_TAG=${cfg.tag} npm run db:populate:local:purge\n`
+        : `\n♻️  to take it back out: DATABASE_URL="…" LIVE_SEED=1 SEED_TAG=${cfg.tag} npm run db:populate:purge\n`
       );
+    }
     await db?.$client.end();
   });
 
-  it.skipIf(purgeOnly)('finds live player activity to build on', () => {
+  it.skipIf(purgeOnly)('finds player activity to build on', () => {
     assert.ok(live.pairs.length > 0, 'no player+category pairs with events');
     for (const pair of live.pairs) assert.ok(pair.events.length > 0, `pair ${pair.key} has no events`);
   });
+
+  // The dev fallback in src/lib/server/auth.ts resolves the broadcaster by this exact channel_id, and the UI
+  // drops any pickable module.fromPickable cannot hydrate — so a local seed the app cannot read is a failed one.
+  it.skipIf(!isLocal() || purgeOnly)('wires the local floor to what the dev server actually resolves', async () => {
+    assert.ok(foundation, 'local mode ran without building a foundation');
+    assert.deepEqual(
+      foundation.categories.map(c => c.mode).sort(),
+      [...LOCAL_MODES].sort(),
+      'the local game is missing modes'
+    );
+
+    const [row] = await db
+      .select({ platformId: identities.platformId })
+      .from(players)
+      .innerJoin(identities, eq(identities.id, players.identityId))
+      .where(eq(players.id, foundation.playerId));
+    assert.strictEqual(row?.platformId, cfg.channelId, 'the broadcaster is not the channel the dev fallback asks for');
+
+    const { default: CDN } = await import('$lib/core/games/HS/common/cdn');
+    const known = new Set((await CDN()).cards.map(c => c.id));
+    const pickables = await db
+      .selectDistinct({ pickable: events.pickable })
+      .from(events)
+      .where(eq(events.playerId, foundation.playerId));
+    const orphans = pickables.filter(p => !known.has(p.pickable));
+    assert.deepEqual(orphans, [], 'seeded pickables the game module cannot hydrate into cards');
+  }, 300_000);
 
   it.skipIf(purgeOnly)('mints funky, unique handles', () => {
     assert.strictEqual(plan.viewers.length, cfg.viewers);
@@ -139,13 +193,14 @@ describe.skipIf(!armed)('live populate', () => {
   );
 
   it.skipIf(dry || purgeOnly)(
-    'leaves the live player data untouched',
+    'leaves the player data it builds on untouched',
     async () => {
       assert.strictEqual(await count(db, events, foreign(cfg.tag)), before.events, 'pre-existing event rows changed');
       assert.strictEqual(await count(db, players), before.players, 'player rows changed');
-      // Everything added to player_event is tagged, and there is exactly as much of it as the plan called for.
+      // Everything writeSeed adds to player_event is tagged, and there is exactly as much of it as the plan
+      // called for. On local the foundation's own events carry the same tag, so this is a delta, not a total.
       const tagged = await count(db, events, sql`${events.meta}->>'seed' = ${cfg.tag}`);
-      assert.strictEqual(tagged, plan.events.length, 'seeded event count does not match the plan');
+      assert.strictEqual(tagged - before.seeded, plan.events.length, 'seeded event count does not match the plan');
     },
     120_000
   );

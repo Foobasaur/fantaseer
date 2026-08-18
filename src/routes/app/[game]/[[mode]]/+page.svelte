@@ -1,6 +1,6 @@
 <script lang="ts">
 import { resolve } from '$app/paths';
-import { fabio } from '$lib/svelted/app';
+import { fabio } from '$lib/common/app';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
 
 let { data, params } = $props();
@@ -27,10 +27,10 @@ const summary = $derived.by(() => {
 {#snippet Top3()}
   <div class="divider my-2"></div>
   <div class="mt-2 space-y-1">
-    {#each summary.totals.top3 as entry (entry.username)}
+    {#each summary.totals.top3 as entry (entry.viewer.id)}
       <div class="flex items-center gap-2 text-sm">
         <span class="font-bold opacity-60">#{entry.rank}</span>
-        <span class="flex-1">{entry.username}</span>
+        <span class="flex-1">{entry.viewer.meta.username}</span>
         <span class="font-semibold">{entry.score.weighted}</span>
       </div>
     {/each}

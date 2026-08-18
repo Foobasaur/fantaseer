@@ -14,18 +14,14 @@ export const withTimeout = async <T extends readonly unknown[] | []>(
   return Promise.race([combined, new Promise<never>((_, reject) => setTimeout(() => reject(error), timeout))]) as Promise<T>;
 };
 export const waitFor = async (conition: () => boolean, { timeout = 10, step = 100 } = {}) => {
-  while (!conition() && timeout--) {
-    await delay(step);
-  }
-  return timeout && conition() || Promise.reject(new Error('waitFor: condition not met in time'));
+  while (!conition() && timeout--) await delay(step);
+  return (timeout && conition()) || Promise.reject(new Error('waitFor condition not met in time'));
 };
 export const roundRobin =
   <T>(items: T[]) =>
   (index: number): T =>
     items[index % items.length];
 
-export const check = async (res: Response) =>
-  res.ok ? res.json() : error(res.status, JSON.stringify({ res, text: await res.text() }));
 export const catchy = async <T>(fn: () => Promise<T>) => {
   try {
     return json(await fn());
@@ -44,3 +40,11 @@ export const tc = async <T = void>(fn: () => Promise<T>) => {
     return (e as Error)?.message || 'An unexpected error occurred';
   }
 };
+
+export const check = async (res: Response) =>
+  res.ok ? res.json() : error(res.status, JSON.stringify({ res, text: await res.text() }));
+export const ensure = <T>(value: T | null | undefined, msg = 'Value is null or undefined'): T | never =>
+  (value != null && value) ||
+  ((): never => {
+    throw new Error(msg);
+  })();

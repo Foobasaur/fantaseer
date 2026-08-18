@@ -1,195 +1,177 @@
+import { EmptyFilter, and, eq, exists, lte } from 'drizzle-orm';
+
 import { db, tablez } from '$lib/server/db/client';
-import { lbizaMap } from '$lib/utilz/lbizaMap';
-import type { DB } from '@';
-import { and, type AnyColumn, eq, inArray, notExists, sql } from 'drizzle-orm';
-import { $get } from '../kit';
+import { $get } from '$lib/server/db/kit';
+import { AMap } from '$lib/common/impl/AMap';
+import { sumScalars } from '$lib/utilz/morph';
 import { truncate } from '$lib/utilz/stringz';
+import type { Game, Server } from '@';
 
-// ============================================================
-// SQL Fragment Builders
-// ============================================================
-
-const sqlCount = (column: AnyColumn) => sql<number>`COUNT(DISTINCT ${column})::int`;
-const sqlPlayer = (column: AnyColumn, playerId?: number) => (playerId != null ? eq(column, playerId) : undefined);
-const sqlCategories = (column: AnyColumn, categories: DB.Infertable['categories'][]) =>
-  inArray(
-    column,
-    categories.map(c => c.id)
-  );
-const qwWhere = (table: DB.Tables['drafts' | 'pickems'], categories: DB.Infertable['categories'][], playerId?: number) =>
-  and(
-    sqlPlayer(table.playerId, playerId),
-    sqlCategories(table.categoryId, categories),
-    notExists(
-      db
-        .select()
-        .from(tablez.banned)
-        .where(and(eq(tablez.banned.viewerId, table.viewerId), eq(tablez.banned.playerId, table.playerId)))
-    )
-  );
-
-// ============================================================
-// Query Functions
-// ============================================================
+const blank = () => ({
+  fantasy: {
+    drafts: 0,
+    picks: 0,
+    engagement: { matched: 0, observed: 0 },
+    eventables: new Array<{ eventable: string; pickable: string; events: number }>()
+  },
+  pickems: { attempts: 0, hits: 0, misses: 0 },
+  score: { engagement: 0, pickems: 0, weighted: 0 }
+});
 
 /** Get aggregated engagement summary across categories */
-export const fantasy = async (categories: DB.Infertable['categories'][], playerId?: number) => {
-  // ── Step 1: drafts + nested picks via RQB
-  const drafts = await db.query.drafts.findMany({
-    where: {
-      categoryId: { in: categories.map(c => c.id) },
-      ...(playerId != null ? { playerId } : {})
-    },
-    columns: { id: true, viewerId: true, categoryId: true, playerId: true },
-    with: {
-      picks: { columns: { id: true, pickable: true, createdAt: true } }
-    }
-  });
-  if (!drafts.length) return [];
-
-  // ── Step 2: candidate events for touched (player, category) pairs + observer scope
-  const playerIds = [...new Set(drafts.map(d => d.playerId))];
-  const categoryIds = [...new Set(drafts.map(d => d.categoryId))];
-  const viewerIds = [...new Set(drafts.map(d => d.viewerId))];
-
-  const events = await db.query.events.findMany({
-    where: { playerId: { in: playerIds }, categoryId: { in: categoryIds } },
-    columns: { id: true, playerId: true, categoryId: true, eventable: true, pickable: true, createdAt: true },
-    with: {
-      observers: {
-        where: { viewerId: { in: viewerIds } },
-        columns: { viewerId: true }
+export const fantasy = async (categoryIds: number[], playerId: number | EmptyFilter = EmptyFilter) => {
+  const [drafts, events] = await Promise.all([
+    db.query.drafts.findMany({
+      columns: { viewerId: true, categoryId: true, playerId: true },
+      where: { categoryId: { in: categoryIds }, playerId },
+      with: { picks: { columns: { pickable: true, createdAt: true } } }
+    }),
+    db.query.events.findMany({
+      columns: { playerId: true, categoryId: true, eventable: true, pickable: true, createdAt: true },
+      where: {
+        categoryId: { in: categoryIds },
+        playerId,
+        RAW: event =>
+          exists(
+            db
+              .select()
+              .from(tablez.picks)
+              .innerJoin(tablez.drafts, eq(tablez.drafts.id, tablez.picks.draftId))
+              .where(
+                and(
+                  eq(tablez.drafts.playerId, event.playerId),
+                  eq(tablez.drafts.categoryId, event.categoryId),
+                  eq(tablez.picks.pickable, event.pickable),
+                  lte(tablez.picks.createdAt, event.createdAt)
+                )
+              )
+          )
+      },
+      with: {
+        observers: {
+          columns: { viewerId: true },
+          where: {
+            RAW: observer => exists(db.select().from(tablez.drafts).where(eq(tablez.drafts.viewerId, observer.viewerId)))
+          }
+        }
       }
-    }
-  });
+    })
+  ]);
 
-  // ── Step 3: index events for pick-side match
-  const byPickable = new lbizaMap<string, typeof events>();
-  for (const e of events) byPickable.getOrCompute(`${e.playerId}:${e.categoryId}:${e.pickable}`, () => []).push(e);
-
-  // ── Step 4: bucket
-  type Events = typeof events;
-  type Drafts = ((typeof drafts)[number] & {
-    picks: ((typeof drafts)[number]['picks'][number] & { events: Events })[];
-  })[];
-  const buckets = new lbizaMap<`${number}:${number}`, { events: Events; drafts: Drafts }>();
-  const attachedEvents = new lbizaMap<`${number}:${number}`, Set<number>>();
-
-  // 4a: attach matched events to picks, push into bucket.drafts
-  for (const draft of drafts) {
-    const key: `${number}:${number}` = `${draft.viewerId}:${draft.categoryId}`;
-    const bucket = buckets.getOrCompute(key, () => ({ events: [], drafts: [] }));
-    const attached = attachedEvents.getOrCompute(key, () => new Set<number>());
-
-    const picks = draft.picks.map(pick => {
-      const candidates = byPickable.get(`${draft.playerId}:${draft.categoryId}:${pick.pickable}`) ?? [];
-      const evs = candidates.filter(e => e.createdAt >= pick.createdAt);
-      for (const e of evs) attached.add(e.id);
-      return { ...pick, events: evs };
-    });
-    bucket.drafts.push({ ...draft, picks });
-  }
-
-  // 4b: collect remaining (un-attached) events into each relevant bucket
-  for (const e of events) {
-    for (const { viewerId } of e.observers) {
-      const key: `${number}:${number}` = `${viewerId}:${e.categoryId}`;
-      if (attachedEvents.get(key)?.has(e.id)) continue;
-      buckets.get(key)?.events.push(e);
-    }
-  }
-
-  return [...buckets.values()];
+  return drafts.map(draft => ({
+    ...draft,
+    picks: draft.picks.map(pick => ({
+      ...pick,
+      events: events.filter(
+        e =>
+          e.pickable === pick.pickable &&
+          e.playerId === draft.playerId &&
+          e.categoryId === draft.categoryId &&
+          e.createdAt >= pick.createdAt
+      )
+    }))
+  }));
 };
 
 /** Get aggregated pickems summary across categories */
-export const pickems = async (categories: DB.Infertable['categories'][], playerId?: number) => {
+export const pickems = async (categoryIds: number[], playerId: number | EmptyFilter = EmptyFilter) => {
   const query = await db.query.pickaroos.findMany({
+    columns: { id: true },
     where: {
-      categoryId: { in: categories.map(c => c.id) },
-      ...(playerId != null && { playerId })
+      playerId,
+      outcomeId: { isNotNull: true },
+      categoryId: { in: categoryIds }
     },
-    with: { pickems: true, event: true }
+    with: {
+      pickems: { columns: { viewerId: true, categoryId: true, pickable: true } },
+      event: { columns: { pickable: true } }
+    }
   });
-  return query;
+  return query.flatMap(p => p.pickems.map(i => ({ ...i, event: p.event })));
 };
 
 /** Get aggregated per-(viewer, category) raw counts scoped to a player */
-export const scores = async (categories: DB.Infertable['categories'][], playerId?: number) => {
-  const [fantasyRows, pickemRows, viewerRows] = await Promise.all([
-    fantasy(categories, playerId),
-    pickems(categories, playerId),
-    $get('viewers')<DB.Viewer['meta']>().then(rows => new Map(rows.map(v => [v.id, v] as const)))
-  ]);
+export const scores = async (categories: Server.DB.Infertable['categories'][], matrix: Game.Scores, playerId?: number) => {
+  const categoryIds = categories.map(c => c.id);
+  const [drafts, pickaroos] = await Promise.all([fantasy(categoryIds, playerId), pickems(categoryIds, playerId)]);
+  const viewers = (
+    await $get('viewers')<Server.DB.Viewer['meta']>({
+      where: { id: ['inArray', [...new Set([...drafts, ...pickaroos].map(row => row.viewerId))]] }
+    })
+  ).map(v => ({ ...v, meta: { avatar: v.meta?.avatar, username: v.meta?.username || `#${v.id}` } }));
 
-  const empty = (k: `${number}:${number}`) => {
+  const summaries = new AMap((k: `${number}:${number}`) => {
     const [viewerId, categoryId] = k.split(':').map(Number);
-    const viewer = viewerRows.get(viewerId);
-    return {
-      viewerId,
-      categoryId,
-      username: (viewer?.meta?.username && truncate(viewer?.meta?.username)) || `Viewer ${viewerId}`,
-      avatar: viewer?.meta?.avatar,
-      fantasy: {
-        drafts: 0,
-        picks: 0,
-        observedPicks: 0,
-        notObservedEvents: 0,
-        unpicked: 0,
-        eventables: [] as { eventable: string; pickable: string; events: number }[]
-      },
-      pickems: { attempts: 0, hits: 0, misses: 0 }
-    };
-  };
-  const cidbuckets = new lbizaMap<number, { pickaroo: { open: number } }>();
-  const buckets = new lbizaMap<`${number}:${number}`, ReturnType<typeof empty>>();
+    const viewer = viewers.find(v => v.id === viewerId) || { id: viewerId, meta: { avatar: null, username: `#${viewerId}` } };
+    return { ...blank(), categoryId, viewer };
+  });
 
-  for (const { drafts, events } of fantasyRows) {
-    const { viewerId, categoryId } = drafts[0] || events[0];
-    const { fantasy } = buckets.getOrCompute(`${viewerId}:${categoryId}`, empty);
-    fantasy.unpicked += events.length;
+  for (const draft of drafts) {
+    const { fantasy } = summaries.compute(`${draft.viewerId}:${draft.categoryId}`);
+    fantasy.drafts += 1;
+    fantasy.picks += draft.picks.length;
 
-    if (!drafts.length) continue;
-    const matched = new Set<number>();
-    const observed = new Set<number>();
-
-    for (const draft of drafts) {
-      fantasy.drafts += 1;
-      fantasy.picks += draft.picks.length;
-      for (const pick of draft.picks) {
-        let pickObserved = false;
-        for (const event of pick.events) {
-          if (event.observers.some(o => o.viewerId === viewerId)) {
-            observed.add(event.id);
-            pickObserved = true;
-          }
-          if (!matched.has(event.id)) {
-            matched.add(event.id);
-            const e = fantasy.eventables.find(x => x.eventable === event.eventable && x.pickable === pick.pickable);
-            if (e) e.events += 1;
-            else fantasy.eventables.push({ eventable: event.eventable, pickable: pick.pickable, events: 1 });
-          }
-        }
-        if (pickObserved) fantasy.observedPicks += 1;
+    for (const pick of draft.picks) {
+      fantasy.engagement.matched += pick.events.length;
+      for (const event of pick.events) {
+        if (event.observers.some(o => o.viewerId === draft.viewerId)) fantasy.engagement.observed += 1;
+        (e =>
+          (e && (e.events += 1)) ||
+          fantasy.eventables.push({ eventable: event.eventable, pickable: pick.pickable, events: 1 }))(
+          fantasy.eventables.find(x => x.eventable === event.eventable && x.pickable === pick.pickable)
+        );
       }
     }
-    fantasy.notObservedEvents = matched.size - observed.size;
   }
-  for (const pickaroo of pickemRows) {
-    cidbuckets.getOrSet(pickaroo.categoryId, { pickaroo: { open: 0 } }).pickaroo.open += pickaroo.event == null ? 1 : 0;
-    for (const pickem of pickaroo.pickems) {
-      const { pickems } = buckets.getOrCompute(`${pickem.viewerId}:${pickem.categoryId}`, empty);
-      pickems.attempts += 1;
-      if (pickaroo.event?.pickable == pickem.pickable) {
-        pickems.hits += 1;
-      } else {
-        pickems.misses += 1;
-      }
+
+  for (const pickem of pickaroos) {
+    const { pickems } = summaries.compute(`${pickem.viewerId}:${pickem.categoryId}`);
+    pickems[pickem.event?.pickable === pickem.pickable ? 'hits' : 'misses'] += 1;
+    pickems.attempts += 1; // TDDO: revisit before 0.0.2 release
+  }
+
+  const scoring = [...summaries.values()].map(b => {
+    const pickems = Math.round(b.pickems.hits * matrix.pw.win.weight + b.pickems.misses / matrix.pw.lose.weight);
+    const engagement = Math.round(
+      b.fantasy.engagement.observed * matrix.ew.observed.weight + b.fantasy.engagement.matched * matrix.ew.matched.weight
+    );
+    return { ...b, score: { engagement, pickems, weighted: engagement + pickems } };
+  });
+
+  const buckets = AMap.New<number | null>()(
+    () => ({ ...blank(), rows: new AMap<number, (typeof scoring)[number]>() }),
+    [...categoryIds, null]
+  );
+
+  for (const score of scoring) {
+    const sums = { fantasy: score.fantasy, pickems: score.pickems, score: score.score };
+    for (const cid of [score.categoryId, null]) {
+      const bucket = buckets.compute(cid);
+      sumScalars(bucket, sums);
+
+      const viewer = bucket.rows.compute(score.viewer.id, () => ({ ...score, ...blank() }));
+      sumScalars(viewer, sums);
     }
   }
 
   return {
-    buckets: [...buckets.values()],
-    cidbuckets: [...cidbuckets].map(([categoryId, { pickaroo }]) => ({ categoryId, pickaroo }))
+    totals: [...buckets].map(([categoryId, bucket]) => ({
+      category: categories.find(c => c.id === categoryId),
+      fantasy: bucket.fantasy,
+      pickems: bucket.pickems,
+      scores: [...bucket.rows.values()]
+        .sort((a, b) => b.score.weighted - a.score.weighted)
+        .map((row, i) => ({ ...row, rank: i + 1 }))
+    })),
+    // =================================================
+    // TDDO: remove 0.0.2 release
+    summaries: {
+      viewer: scoring.map(s => ({
+        ...s,
+        username: truncate(s.viewer.meta.username, 16),
+        fantasy: { ...s.fantasy, observedPicks: 0, notObservedEvents: 0 }
+      }))
+    }
+    // =================================================
   };
 };

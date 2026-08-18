@@ -1,10 +1,10 @@
-import type { DB } from '@';
+import type { Server } from '@';
 import { and, eq, getColumns, sql } from 'drizzle-orm';
 import * as drizzler from 'drizzle-orm/sql/expressions/conditions';
 import { db, tablez } from './client';
 
-const condition = <T extends DB.Tablekey>(name: T, where: DB.Options<T>['where'] = {}) => {
-  const source = tablez[name as DB.Tablekey];
+const condition = <T extends Server.DB.Tablekey>(name: T, where: Server.DB.Options<T>['where'] = {}) => {
+  const source = tablez[name as Server.DB.Tablekey];
   const columns = getColumns(source);
 
   const conditions = Object.keys(where).map(k => {
@@ -23,11 +23,11 @@ const condition = <T extends DB.Tablekey>(name: T, where: DB.Options<T>['where']
   });
   return { source, columns, conditions };
 };
-const getter = async <T extends DB.Tablekey>(name: T, { where, ...opts }: DB.Options<T>) => {
+const getter = async <T extends Server.DB.Tablekey>(name: T, { where, ...opts }: Server.DB.Options<T>) => {
   const { source, columns, conditions } = condition(name, where);
 
   // Build and execute query
-  const normalizer = (thing?: keyof DB.Infertable[T] | DB.Colmnuilder[]) =>
+  const normalizer = (thing?: keyof Server.DB.Infertable[T] | Server.DB.Colmnuilder[]) =>
     thing ?
       Array.isArray(thing) ?
         thing
@@ -48,32 +48,32 @@ const getter = async <T extends DB.Tablekey>(name: T, { where, ...opts }: DB.Opt
 
 // Generic factory function to create typed getters
 export const $get =
-  <T extends DB.Tablekey>(table: T) =>
-  async <meta = unknown>(opts: DB.Options<T> = {}) => {
+  <T extends Server.DB.Tablekey>(table: T) =>
+  async <meta = unknown>(opts: Server.DB.Options<T> = {}) => {
     const result = await getter(table, opts);
-    return result ? (result as DB.Metabled<T, meta>[]) : [];
+    return result ? (result as Server.DB.Metabled<T, meta>[]) : [];
   };
 
 export const $select =
-  <T extends DB.Tablekey>(table: T) =>
-  <S extends Record<string, DB.Colmnuilder>>(select: S) =>
-  (opts: Omit<DB.Options<T>, 'select'> = {}) => {
+  <T extends Server.DB.Tablekey>(table: T) =>
+  <S extends Record<string, Server.DB.Colmnuilder>>(select: S) =>
+  (opts: Omit<Server.DB.Options<T>, 'select'> = {}) => {
     const result = getter(table, { ...opts, select });
-    return result as Promise<DB.Selectuilder<S>[]>;
+    return result as Promise<Server.DB.Selectuilder<S>[]>;
   };
 
 export const $insert =
-  <T extends DB.Tablekey>(table: T) =>
-  (data: DB.Infertable<'Insert'>[T] | DB.Infertable<'Insert'>[T][]) =>
+  <T extends Server.DB.Tablekey>(table: T) =>
+  (data: Server.DB.Infertable<'Insert'>[T] | Server.DB.Infertable<'Insert'>[T][]) =>
     db
       .insert(tablez[table])
       .values(data as any)
-      .returning() as Promise<DB.Infertable[T][]>;
+      .returning() as Promise<Server.DB.Infertable[T][]>;
 
 export const $update =
-  <T extends DB.Tablekey>(table: T) =>
-  <meta = unknown>(where: NonNullable<DB.Options<T>['where']>) =>
-  async (data: Partial<DB.Infertable<'Insert'>[T]>) => {
+  <T extends Server.DB.Tablekey>(table: T) =>
+  <meta = unknown>(where: NonNullable<Server.DB.Options<T>['where']>) =>
+  async (data: Partial<Server.DB.Infertable<'Insert'>[T]>) => {
     const { source, conditions } = condition(table, where);
     const query = db
       .update(source)
@@ -89,12 +89,12 @@ export const $update =
       })
       .where(and(...conditions))
       .returning();
-    return query as unknown as Promise<DB.Metabled<T, meta>[]>; // Type assertion to include meta
+    return query as unknown as Promise<Server.DB.Metabled<T, meta>[]>; // Type assertion to include meta
   };
 
 export const $delete =
-  <T extends DB.Tablekey>(table: T) =>
-  (opts: DB.Options<T>) => {
+  <T extends Server.DB.Tablekey>(table: T) =>
+  (opts: Server.DB.Options<T>) => {
     const { source, conditions } = condition(table, opts.where);
     return db
       .delete(source)
