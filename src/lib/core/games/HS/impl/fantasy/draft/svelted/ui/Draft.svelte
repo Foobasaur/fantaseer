@@ -4,13 +4,14 @@ import { create } from '$lib/core/games/HS/impl/fantasy/draft/svelted/store.svel
 import { checker, PREFIXER } from '$lib/utilz/morph';
 import { eqludes } from '$lib/utilz/stringz';
 
+import empty from '$lib/assets/empty.png';
 import cardpack from '$lib/assets/hs/icons/icon_cardpack.png';
 import Deck from '$lib/core/games/HS/impl/fantasy/draft/svelted/ui/Deck.svelte';
 import Slider from '$lib/core/games/HS/impl/fantasy/draft/svelted/ui/controls/Slider.svelte';
 import Cardio from '$lib/svelted/ui/actions/buttons/Card.svelte';
 import Selecto from '$lib/svelted/ui/inputs/selects/Box.svelte';
 import Radio from '$lib/svelted/ui/inputs/selects/Radio.svelte';
-import ChunkedList from '$lib/svelted/ui/layout/ChunkedList.svelte';
+import Empty from '$lib/svelted/ui/layout/Empty.svelte';
 import type { HS, FantasyDraftPageData as PageData, Server } from '@';
 
 // STATE:
@@ -18,15 +19,15 @@ let category = $state<Server.DB.Infertable['categories']>();
 let store = $state<ReturnType<typeof create>>();
 
 // PROPS:
-const props: { data: PageData; submit: (s: typeof store) => void } = $props();
-// const pickables = $derived(((props.data.pickables || []) as HS.Card[]).sort((a, b) => a.dbfId - b.dbfId));
+let { error = $bindable(), data }: { data: PageData; error?: string } = $props();
+// const pickables = $derived(((data.pickables || []) as HS.Card[]).sort((a, b) => a.dbfId - b.dbfId));
 $effect(() => {
-  category ||= props.data.categories.find(c => c.mode === page.params.mode);
-  store = category && create(category.mode, props.data.pickables);
+  category ||= data.categories.find(c => c.mode === page.params.mode);
+  store = category && create(category.mode, data.pickables);
 });
 
 // FILTERED CARDS: Apply filtration based on selected filters
-const Filtered = $derived(store?.check() || []);
+const Filtered = $derived(store?.session.filtered ?? []);
 const Filter = (mechanic: strumbol) =>
   Filtered.filter(
     c =>
@@ -34,7 +35,6 @@ const Filter = (mechanic: strumbol) =>
       checker(mechanic, c.mechanics) ||
       checker(mechanic, c.referencedTags)
   );
-  const items = $derived(Filter(store?.filter?.mechanic || PREFIXER));
 </script>
 
 {#snippet Pickles(picks: HS.Card[])}
@@ -51,11 +51,11 @@ const Filter = (mechanic: strumbol) =>
 
   <!-- Main Content -->
   <div class="drawer-content">
-    {#if store && store.validation.valid}
+    {#if store && store.validate.valid}
       <!-- Show confirm UI when draft is complete -->
       <div class="page-content">
-        {@render Pickles(store.picks)}
-        <button class="btn btn-primary w-full" onclick={() => props.submit(store)}>Confirm</button>
+        {@render Pickles(store.session.picks)}
+        <button class="btn btn-primary w-full" onclick={async () => (error = await store?.submit())}>Confirm</button>
       </div>
     {:else if store}
       <!-- Sticky header with draft.filters -->
@@ -64,7 +64,7 @@ const Filter = (mechanic: strumbol) =>
          before:content-[''] before:absolute before:inset-0 before:-z-10 before:bg-base-200/80 before:shadow-2xl
          before:backdrop-brightness-90 before:mask-intersect
          before:mask-[linear-gradient(to_right,transparent,black_10%,black_90%,transparent),linear-gradient(to_bottom,transparent,black_0%,black_78%,transparent)]">
-        <Slider class="mb-2" type={store.rules.slider} bind:value={store.filter[store.rules.slider]} />
+        <Slider class="mb-2" type={store.rules.slider} bind:value={store.session.filter[store.rules.slider]} />
 
         <details class="filter-details group">
           <!-- Summary positioned where the old toggle button was -->
@@ -76,28 +76,28 @@ const Filter = (mechanic: strumbol) =>
           </summary>
 
           <!-- Content shown when <details> is open -->
-          <Radio class="flex my-0.5" {...store.options.radials} bind:selected={store.filter.radials} />
+          <Radio class="flex my-0.5" {...store.options.radials} bind:selected={store.session.filter.radials} />
 
           <div class="join mb-1 flex items-stretch justify-center">
             <input
               type="text"
               placeholder="Search"
               class="flex flex-col items-center justify-center text-center input input-sm w-full"
-              bind:value={store.filter.search} />
-            <Selecto collection={store.options.draftables} bind:selected={store.filter.set} />
+              bind:value={store.session.filter.search} />
+            <Selecto collection={store.options.draftables} bind:selected={store.session.filter.set} />
             {#if store.options.types}
-              <Selecto collection={store.options.types.card} bind:selected={store.filter.card} />
+              <Selecto collection={store.options.types.card} bind:selected={store.session.filter.card} />
               <Selecto
-                collection={store.options.types[store.filter.card as keyof typeof store.options.types]}
-                bind:selected={store.filter[store.filter.card as keyof typeof store.filter]} />
+                collection={store.options.types[store.session.filter.card as keyof typeof store.options.types]}
+                bind:selected={store.session.filter[store.session.filter.card as keyof typeof store.session.filter]} />
             {/if}
             <Selecto
               collection={Object.fromEntries(
                 Object.entries(store.options.mechanics).filter(
-                  ([key]) => key === PREFIXER || key === store?.filter?.mechanic || Filter(key)?.length
+                  ([key]) => key === PREFIXER || key === store?.session.filter.mechanic || Filter(key)?.length
                 )
               )}
-              bind:selected={store.filter.mechanic} />
+              bind:selected={store.session.filter.mechanic} />
           </div>
         </details>
 
@@ -108,7 +108,7 @@ const Filter = (mechanic: strumbol) =>
             <span class="absolute inset-0 mt-3 flex justify-center">🔱</span>
             <span class="absolute inset-0 mt-5 flex items-center justify-center">
               <span class="badge badge-soft font-semibold backdrop-blur-sm">
-                {store.picks.length}/{store.rules.length}
+                {store.session.picks.length}/{store.rules.length}
               </span>
             </span>
           </figure>
@@ -117,17 +117,16 @@ const Filter = (mechanic: strumbol) =>
 
       <!-- Card Grid -->
       <div class="flex flex-wrap justify-center gap-0">
-        <ChunkedList {items} chunk={9} preload={0}>
-          {#snippet row(card)}
-            {@const count = store!.picks.filter(p => p.id === card.id)?.length}
-            <Cardio
-              class={card.type === 'HERO' ? `[&_img]:-mb-5` : `[&_img]:-mb-9`}
-              img={{ src: store!.rules.display(card) }}
-              badge={!count ? '' : 'x' + count}
-              disabled={!store?.canAdd(card)}
-              onclick={() => store?.picks.push(card)} />
-          {/snippet}
-        </ChunkedList>
+      {#each Filter(store.session.filter.mechanic) as card (card.id)}
+          {@const count = store.session.picks.filter(p => p.id === card.id)?.length}
+          <Cardio
+            class={card.type === 'HERO' ? `[&_img]:-mb-5` : `[&_img]:-mb-9`}
+            img={{ src: store.rules.display(card) }}
+            badge={!count ? '' : 'x' + count}
+            disabled={!store.canAdd(card)}
+            onclick={() => store?.session.picks.push(card)} />
+        {:else}<Empty src={empty} tagline="Foo Baribbit?" />{/each}
+          <!-- <pre>{JSON.stringify(card, null, 2)}</pre> -->
       </div>
     {/if}
   </div>
@@ -137,7 +136,7 @@ const Filter = (mechanic: strumbol) =>
     <label for="draft-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
     <div class="flex min-h-full w-69 flex-col bg-base-200">
       <label for="draft-drawer" class="btn absolute top-2 right-2 z-1 btn-circle btn-ghost btn-sm">✕</label>
-      {@render Pickles(store?.picks ?? [])}
+      {@render Pickles(store?.session.picks ?? [])}
     </div>
   </div>
 </div>

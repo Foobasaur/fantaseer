@@ -6,16 +6,17 @@ export interface Filter extends Game.Filter {
   mana: number;
   tier: number;
   radials: strumbol[];
-  set: strumbol;
-  card: strumbol;
-  minion: strumbol;
-  spell: strumbol;
-  mechanic: strumbol;
+  set: string;
+  card: string;
+  minion: string;
+  spell: string;
+  mechanic: string;
 }
 
 interface Rules extends Game.Fantasy<HS.Card, HS.Mode | (string & {}), Filter> {
   readonly slider: 'tier' | 'mana';
   build(pool: HS.Card[]): {
+    haystacks: string[];
     draftables: Record<string, string>;
     radials: ReturnType<typeof drawable>;
     mechanics: Record<string, string>;
@@ -38,6 +39,7 @@ export const basic: Rules = {
     }));
     return {
       radials: drawable(blobby(import.meta.glob('$lib/assets/hs/class/*.png', { eager: true })), defs('Class', it.class)),
+      haystacks: pool.map(c => [c.rarity, c.name, c.flavor, c.text].join('').toLowerCase()),
       draftables: defs('Set', it.set, key => SETS[key], null),
       mechanics: defs('Mechanic', it.mechanic),
       types: {
@@ -49,7 +51,6 @@ export const basic: Rules = {
     };
   },
   canAdd(current, candidate) {
-    if (current.length >= this.length) return false;
     const count = current.filter(c => c.dbfId === candidate.dbfId).length;
     return count === 0;
   },
@@ -88,12 +89,12 @@ export const bg: Rules = {
     }));
     return {
       radials: drawable(blobby(import.meta.glob('$lib/assets/hs/tribes/*.jpg', { eager: true })), defs('Tribe', it.tribe)),
+      haystacks: pool.map(c => [c.name, c.flavor, c.text].join('').toLowerCase()),
       draftables: defs('Unit Type', it.unit),
       mechanics: defs('Mechanic', it.mechanic)
     };
   },
   canAdd(current, candidate) {
-    if (current.length >= this.length) return false;
     const count = current.filter(c => c.dbfId === candidate.dbfId).length;
     return count === 0;
   },
@@ -116,4 +117,8 @@ export const bg: Rules = {
   }
 };
 
-export const find = (mode: HS.Mode | (string & {}) = '') => [basic, bg].find(r => r.modes.includes(mode)) || basic;
+export const adopt = (mode: string, pool:HS.Card[]) =>{
+ const rules =  [basic, bg].find(r => r.modes.includes(mode)) || basic;
+ const options = rules.build(pool);
+ return { rules, options };
+}

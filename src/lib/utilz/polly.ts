@@ -1,7 +1,6 @@
 import { isHttpError, json, error } from '@sveltejs/kit';
 
 export const delay = <T>(ms: number, then?: () => T) => new Promise(resolve => setTimeout(() => resolve(then?.()), ms));
-
 export const withTimeout = async <T extends readonly unknown[] | []>(
   promises: { [K in keyof T]: Promise<T[K]> },
   timeout = 3000,
@@ -17,10 +16,25 @@ export const waitFor = async (conition: () => boolean, { timeout = 10, step = 10
   while (!conition() && timeout--) await delay(step);
   return (timeout && conition()) || Promise.reject(new Error('waitFor condition not met in time'));
 };
-export const roundRobin =
-  <T>(items: T[]) =>
-  (index: number): T =>
-    items[index % items.length];
+
+export const faster = (length: number, act: (i: number) => void) => {
+  let live = true;
+  const timer = setTimeout(() => {
+    (async () => {
+      for (let i = 0, t = performance.now(); live && i < length; i++) {
+        if (!(i & 31) && performance.now() - t > 6) {
+          await (scheduler?.yield() ?? new Promise(r => setTimeout(r)));
+          t = performance.now();
+        }
+        act(i);
+      }
+    })();
+  }, 50);
+  return () => {
+    live = false;
+    clearTimeout(timer);
+  };
+};
 
 export const catchy = async <T>(fn: () => Promise<T>) => {
   try {

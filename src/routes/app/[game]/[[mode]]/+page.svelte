@@ -39,11 +39,10 @@ const summary = $derived.by(() => {
 
 <div class="page-content">
   <div class="grid gap-4 md:grid-cols-3">
-    {#each (([, ...c]) => c)(fabio) as { icon, tagline, slug: title, route } (title)}
+    {#each (([, ...c]) => c)(fabio) as { icon, slug: title, route } (title)}
       <Categorically
         {title}
         {icon}
-        {tagline}
         href={resolve(route, { game: params.game, mode: params.mode })}
         stats={summary[title].map(([title, value]) => ({ title, value }))}
         children={title === 'scores' && summary.totals.top3?.length ? Top3 : undefined} />
