@@ -1,15 +1,14 @@
-import { isHttpError } from '@sveltejs/kit';
-
 import { goto } from '$app/navigation';
 import { page } from '$app/state';
 import ebs from '$lib/common/ebs';
 import { adopt, type Filter } from '$lib/core/games/HS/impl/fantasy/draft/rules';
 import { PREFIXER } from '$lib/utilz/morph';
-import { faster } from '$lib/utilz/polly';
+import { faster, tc } from '$lib/utilz/polly';
 import type { HS, Server } from '@';
 
-// CACHE
+// STATE
 const cache = $state<Partial<Record<string, { filtered: HS.Card[]; picks: HS.Card[]; filter: Filter }>>>({});
+const status = $state({ open: false, mechanics: {} as Record<string, string> });
 
 // STORE
 export const create = (mode: HS.Mode | (string & {}), pool: HS.Card[]) => {
@@ -17,57 +16,61 @@ export const create = (mode: HS.Mode | (string & {}), pool: HS.Card[]) => {
     picks: [],
     filtered: [],
     filter: {
-      search: '',
-      mana: -1,
       tier: 0,
-      radials: [] as strumbol[],
+      mana: -1,
+      search: '',
       set: PREFIXER,
       card: PREFIXER,
-      minion: PREFIXER,
       spell: PREFIXER,
-      mechanic: PREFIXER
+      minion: PREFIXER,
+      mechanic: PREFIXER,
+      radials: [] as strumbol[]
     }
   };
   const session = cache[mode];
   const { rules, options } = adopt(mode, pool);
   $effect(() => {
     session.filtered = [];
-    const filter = { ...session.filter };
-    const needle = filter.search.toLowerCase();
-    return faster(
-      pool.length,
-      i =>
-        rules.check(filter, pool[i]).every(Boolean) &&
-        (needle.length < 4 || options.haystacks[i].includes(needle)) &&
-        session.filtered.push(pool[i])
-    );
+    // reset to Any and regrow by discovery: the published object doubles as the pass's dedup set, so
+    // keys never need pruning — a key absent from the base-filtered set simply never gets re-added
+    status.mechanics = { [PREFIXER]: options.mechanics[PREFIXER] };
+    const { tier, mana, search, set, card, spell, minion, mechanic, radials } = session.filter;
+    const filter: Filter = { tier, mana, search, set, card, spell, minion, mechanic, radials };
+    const needle = search.toLowerCase();
+    return faster(pool.length, i => {
+      const card = pool[i];
+      if (!rules.check(filter, card).every(Boolean)) return;
+      else if (needle.length >= 4 && !options.haystack[i].needles.includes(needle)) return;
+      else {
+        const keywords = options.haystack[i].daggers;
+        for (const key of keywords.filter(k => !(k in status.mechanics))) status.mechanics[key] = options.mechanics[key];
+        if (mechanic.startsWith(PREFIXER) || keywords.includes(mechanic)) session.filtered.push(card);
+      }
+    });
   });
   return {
-    get session() {
-      return session;
+    status,
+    session,
+    rules,
+    options,
+    get validation() {
+      return {
+        valid: session.picks.length === rules.length,
+        errors: [`Need ${rules.length} cards`]
+      };
     },
-    get rules() {
-      return rules;
+    remove: (card: HS.Card) => {
+      const idx = session.picks.findIndex(c => c.id === card.id);
+      if (idx > -1) session.picks.splice(idx, 1);
     },
-    get options() {
-      return options;
-    },
-    get validate() {
-      return rules.validate(session.picks);
-    },
-    canAdd: (candidate: HS.Card) => session.picks.length < rules.length && rules.canAdd(session.picks, candidate),
-    submit: async () => {
-      try {
-        const req = ebs(`/app/${page.params.game}/${page.params.mode}/fantasy/${page.params.draft}`);
+    submit: () =>
+      tc(async () => {
+        const req = ebs(`/app/${page.params.game}/${page.params.mode}/fantasy/new`);
         const res = await req.post<Server.EBS.Draft<'post'>>({ picks: session.picks });
         if (res.success) {
           goto(`/app/${page.params.game}/${page.params.mode}/fantasy/`, { replaceState: true });
           delete cache[mode];
         } else throw new Error('Failed to create draft');
-      } catch (err) {
-        console.error(err);
-        return isHttpError(err) ? err.body.message : (err as Error).message || `An unexpected ${err} occurred`;
-      }
-    }
+      })
   };
 };

@@ -1,9 +1,17 @@
+<script module lang="ts">
+export const fabio = [
+  { route: '/app/[game]/[[mode]]', title: 'home', icon: '🕹️' },
+  { route: '/app/[game]/[[mode]]/fantasy', title: 'fantasy', icon: '✨' },
+  { route: '/app/[game]/[[mode]]/pickaroo', title: 'pickaroo', icon: '⚡' },
+  { route: '/app/[game]/[[mode]]/scores', title: 'scores', icon: '🏆' }
+] as const;
+</script>
+
 <script lang="ts">
 import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import { usePubSub } from '$lib/common/twitch/svelted/twitch.svelte';
-import { fabio } from '$lib/common/app';
 import { kappa } from '$lib/utilz/stringz';
 
 let { data, params, children } = $props();
@@ -64,11 +72,11 @@ to_top mask, new (30% / 94%):
   <div class="fab fab-flower">
     <button class="btn btn-circle btn-lg btn-info">
       <span class="drop-shadow-[0_0_3px_rgba(0,0,0,1)] mb-0.5 text-xl"
-        >{fabio[fabio.findIndex(i => i.route === page.route.id)]?.icon || fabio[0].icon }</span>
+        >{fabio[fabio.findIndex(i => i.route === page.route.id)]?.icon || fabio[0].icon}</span>
     </button>
     <span class="fab-close btn btn-circle btn-lg btn-error">⇲</span>
-    {#each fabio as { slug, icon, route }}
-      <div class="tooltip" data-tip={kappa(slug)}>
+    {#each fabio as { title, icon, route } (route)}
+      <div class="tooltip" data-tip={kappa(title)}>
         <a
           href={resolve(route, {
             game: data.game.code,

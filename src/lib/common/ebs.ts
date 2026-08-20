@@ -1,6 +1,5 @@
 import { error } from '@sveltejs/kit';
 
-import { browser } from '$app/environment';
 import { resolve } from '$app/paths';
 import type { Pathname, ResolvedPathname, RouteId, RouteParams } from '$app/types';
 
@@ -18,7 +17,7 @@ interface Opts<R extends RouteId = RouteId> {
   depends?: (...deps: Array<`${string}:${string}`>) => void;
 }
 export default function <R extends RouteId = RouteId>(opts: Pathname | ResolvedPathname | Opts<R>) {
-  const { path, fetch, depends, route, params }: Opts<R> = typeof opts === 'object' ? opts : { path: opts };
+  const { fetch, depends, path, route, params }: Opts<R> = typeof opts === 'object' ? opts : { path: opts };
   const url = ensure(
     path ||
       (route &&

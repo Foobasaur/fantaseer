@@ -5,7 +5,7 @@ import type { Server, Twitch } from '@';
 import { onMount } from 'svelte';
 import { Extension } from '../Extension';
 
-export const twitch = $state<toothy<Extension>>(import.meta.env.VITE_BANG === 'twitch' && new Extension());
+export const twitch = $state<toothy<Extension>>(import.meta.env.VITE_TARGET === 'extension' && new Extension());
 
 let viewer = $state<toothy<Twitch.Viewer>>();
 const authHander = async () => {

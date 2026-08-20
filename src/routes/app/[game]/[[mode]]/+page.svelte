@@ -1,6 +1,6 @@
 <script lang="ts">
 import { resolve } from '$app/paths';
-import { fabio } from '$lib/common/app';
+import { fabio } from '$lib';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
 
 let { data, params } = $props();
@@ -39,7 +39,7 @@ const summary = $derived.by(() => {
 
 <div class="page-content">
   <div class="grid gap-4 md:grid-cols-3">
-    {#each (([, ...c]) => c)(fabio) as { icon, slug: title, route } (title)}
+    {#each (([, ...c]) => c)(fabio) as { icon, title, route } (title)}
       <Categorically
         {title}
         {icon}

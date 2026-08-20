@@ -9,6 +9,7 @@ import { $Viewer, Player } from '$lib/server/db/queries/identity';
 import { scores } from '$lib/server/db/queries/summary';
 import { timer, timez } from '$lib/utilz/numbaz';
 import type { Server, Twitch } from '@';
+import { delay } from '$lib/utilz/polly';
 
 const req = () => {
   const event = getRequestEvent();
@@ -17,7 +18,7 @@ const req = () => {
       return event;
     },
     get user() {
-      return this.event.locals.user || error(401, { message: 'Unauthorized' });
+      return event.locals.user || error(401, { message: 'Unauthorized' });
     },
     get authenticated() {
       return this.user.authenticated || error(401, { message: 'Unauthenticated' });
@@ -106,8 +107,12 @@ export const draft = async () => {
     fantasy: async () => {
       // Load user's drafts for this category
       const { drafts, picks, events, observers } = await eventy({ categoryId: Number(category?.id) || ['isNotNull'] });
-      const open = drafts && category && nexty(drafts);
+      const open = import.meta.env.VITE_TARGET === 'extension' && drafts && category && nexty(drafts);
       return { picks, events, observers, drafts, open };
+    },
+    new: async () => {
+      if (!category) error(404, 'Category not found');
+      return { category, pickables: module.pickables(category.mode), draftables: module.draftables(category.mode) };
     },
     get: async () => {
       // Validate draft ownership and load picks.
@@ -117,9 +122,6 @@ export const draft = async () => {
         observers,
         draft: { ...drafts[0], picks, pickables: module.fromPickable(picks.map(p => p.pickable)) }
       };
-    },
-    new: async () => {
-      return { pickables: module.pickables(category?.mode), draftables: module.draftables(category?.mode) };
     },
     post: async <T extends { id: string }>() => {
       const opts = (await e.event.request.json()) as { picks: T[] };

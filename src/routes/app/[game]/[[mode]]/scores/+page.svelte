@@ -39,7 +39,7 @@ const leaderboard = $derived(totals?.scores.slice(3));
 
 usePubSub({ '*': _ => params.mode && invalidate(data.sourcee) });
 
-type Entry = NonNullable<typeof totals>['scores'][number]
+type Entry = NonNullable<typeof totals>['scores'][number];
 </script>
 
 {#snippet Avatar(entry: Entry)}
@@ -64,14 +64,11 @@ type Entry = NonNullable<typeof totals>['scores'][number]
 {#snippet Username(entry: Entry)}
   <!-- Positive = moved up since last invalidate, negative = moved down, 0 = same/new. -->
   {@const delta = (prev => (prev ? prev - entry.rank : 0))(previous.get(entry.viewer.id))}
-  <span class="flex-1 truncate font-medium">
-    {entry.viewer.meta.username}
-    {#if delta > 0}
-      <span class="text-success text-xs font-bold">↑{delta}</span>
-    {:else if delta < 0}
-      <span class="text-error text-xs font-bold">↓{-delta}</span>
-    {/if}
+  <span class="max-w-full flex-1 truncate font-medium">
+    {#if delta > 0}<span class="text-success text-xs font-bold">↑{delta}</span>
+    {:else if delta < 0}<span class="text-error text-xs font-bold">↓{-delta}</span>{/if}
     {#if entry.viewer.id === data.user.id}<span class="badge badge-primary badge-xs">You</span>{/if}
+    {entry.viewer.meta.username}
   </span>
 {/snippet}
 
@@ -96,7 +93,7 @@ type Entry = NonNullable<typeof totals>['scores'][number]
       <div class="flex items-end justify-center gap-4 px-4 pt-2">
         {#each podium as entry (entry.viewer.id)}
           {@const topping = toppings[entry.rank - 1]}
-          <div class={['flex flex-col items-center tooltip tooltip-bottom podium-enter', topping[0][0]]}>
+          <div class={['flex min-w-0 flex-col items-center tooltip tooltip-bottom podium-enter', topping[0][0]]}>
             <!-- Crown for #1: existing pinger animation (entrance ping + scale + glow loop) -->
             <span class={['z-2 -mt-3 pinger', topping[0][1], entry.rank === 3 && '-mb-3']}>{topping[1][0]}</span>
 

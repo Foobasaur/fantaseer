@@ -34,10 +34,7 @@ export namespace Game {
   /** Draft rules contract. */
   interface Fantasy<TEntity, Tmodes extends string, TFilter extends Filter> extends Feature<TEntity, Tmodes> {
     readonly length: number; // Number of picks per draft
-
     check: (filter: TFilter, entity: TEntity) => boolean[];
-    canAdd(current: TEntity[], candidate: TEntity): boolean;
-    validate(picks: TEntity[]): { valid: boolean; errors: string[] };
   }
 
   /** Pickems rules contract. */

@@ -16,22 +16,37 @@ export interface Filter extends Game.Filter {
 interface Rules extends Game.Fantasy<HS.Card, HS.Mode | (string & {}), Filter> {
   readonly slider: 'tier' | 'mana';
   build(pool: HS.Card[]): {
-    haystacks: string[];
+    haystack: { needles: string; daggers: string[] }[];
     draftables: Record<string, string>;
     radials: ReturnType<typeof drawable>;
     mechanics: Record<string, string>;
     types?: Record<'card' | 'minion' | 'spell' | 'rarity', Record<string, string>>;
   };
 }
+
+const keywordz = (pool: HS.Card[], values: Iterable<unknown> = []) => {
+  const pairs = [...values].map(value => (key => [key, `<b>${key.toLowerCase()}`] as const)(String(value)));
+  return pool.map(c => {
+    const text = c.text?.toLowerCase();
+    return {
+      needles: [c.rarity, c.name, c.flavor, c.text].join('').toLowerCase(),
+      daggers: pairs
+        .filter(([key, bold]) => c.mechanics?.includes(key) || c.referencedTags?.includes(key) || text?.includes(bold))
+        .map(([key]) => key)
+    };
+  });
+};
+
 export const basic: Rules = {
   length: 12,
   slider: 'mana',
   modes: ['Standard', 'Arena', 'Wild'],
+  display: card => card.img.render['256x'],
   build(pool) {
     const it = collect(pool, c => ({
       set: c.set,
-      mechanic: c.mechanics,
       card: c.type,
+      mechanic: c.mechanics,
       class: [c.cardClass, ...(c.classes ?? [])],
       minion: [c.race, ...(c.races ?? [])],
       spell: c.spellSchool,
@@ -39,7 +54,7 @@ export const basic: Rules = {
     }));
     return {
       radials: drawable(blobby(import.meta.glob('$lib/assets/hs/class/*.png', { eager: true })), defs('Class', it.class)),
-      haystacks: pool.map(c => [c.rarity, c.name, c.flavor, c.text].join('').toLowerCase()),
+      haystack: keywordz(pool, it.mechanic),
       draftables: defs('Set', it.set, key => SETS[key], null),
       mechanics: defs('Mechanic', it.mechanic),
       types: {
@@ -49,19 +64,6 @@ export const basic: Rules = {
         rarity: defs('Rarity', it.rarity)
       }
     };
-  },
-  canAdd(current, candidate) {
-    const count = current.filter(c => c.dbfId === candidate.dbfId).length;
-    return count === 0;
-  },
-  validate(picks) {
-    return {
-      valid: picks.length === this.length,
-      errors: [`Need ${this.length} cards`]
-    };
-  },
-  display(card) {
-    return card.img.render['256x'];
   },
   check(filter, c) {
     const race = filter.card === 'MINION' ? filter.minion : PREFIXER;
@@ -81,6 +83,7 @@ export const bg: Rules = {
   length: 8,
   slider: 'tier',
   modes: ['Battlegrounds'],
+  display: card => (card.type === 'HERO' ? card.img.hero['256x'] : card.img.render['256x'].replace('/render/', '/bgs/')),
   build(pool) {
     const it = collect(pool, c => ({
       unit: [c.type, c.battlegroundsTimewarpCard != null ? 'TIMEWARPED' : undefined],
@@ -89,23 +92,10 @@ export const bg: Rules = {
     }));
     return {
       radials: drawable(blobby(import.meta.glob('$lib/assets/hs/tribes/*.jpg', { eager: true })), defs('Tribe', it.tribe)),
-      haystacks: pool.map(c => [c.name, c.flavor, c.text].join('').toLowerCase()),
+      haystack: keywordz(pool, it.mechanic),
       draftables: defs('Unit Type', it.unit),
       mechanics: defs('Mechanic', it.mechanic)
     };
-  },
-  canAdd(current, candidate) {
-    const count = current.filter(c => c.dbfId === candidate.dbfId).length;
-    return count === 0;
-  },
-  validate(picks) {
-    return {
-      valid: picks.length === this.length,
-      errors: [`Need ${this.length} cards`]
-    };
-  },
-  display(card) {
-    return card.type === 'HERO' ? card.img.hero['256x'] : card.img.render['256x'].replace('/render/', '/bgs/');
   },
   check(filter, c) {
     const radius = filter.set === 'MINION' || filter.set === PREFIXER ? filter.radials : PREFIXER;
@@ -117,8 +107,8 @@ export const bg: Rules = {
   }
 };
 
-export const adopt = (mode: string, pool:HS.Card[]) =>{
- const rules =  [basic, bg].find(r => r.modes.includes(mode)) || basic;
- const options = rules.build(pool);
- return { rules, options };
-}
+export const adopt = (mode: string, pool: HS.Card[]) => {
+  const rules = [basic, bg].find(r => r.modes.includes(mode)) || basic;
+  const options = rules.build(pool);
+  return { rules, options };
+};

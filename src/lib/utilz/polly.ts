@@ -17,7 +17,7 @@ export const waitFor = async (conition: () => boolean, { timeout = 10, step = 10
   return (timeout && conition()) || Promise.reject(new Error('waitFor condition not met in time'));
 };
 
-export const faster = (length: number, act: (i: number) => void) => {
+export const faster = (length: number, act: (i: number) => void, done?:()=>void) => {
   let live = true;
   const timer = setTimeout(() => {
     (async () => {
@@ -28,14 +28,21 @@ export const faster = (length: number, act: (i: number) => void) => {
         if (i && !(i & 63)) await (scheduler?.yield() ?? new Promise(r => setTimeout(r)));
         act(i);
       }
+      if (live) done?.();
     })();
   }, 50);
   return () => {
     live = false;
     clearTimeout(timer);
+    done?.();
   };
 };
 
+export const err = (e: unknown) => {
+  console.error(e);
+  if (isHttpError(e)) return e.body.message;
+  return (e as Error)?.message || `An unexpected ${e} occurred`;
+};
 export const catchy = async <T>(fn: () => Promise<T>) => {
   try {
     return json(await fn());
@@ -45,18 +52,17 @@ export const catchy = async <T>(fn: () => Promise<T>) => {
     else return json(e.body, { status: e.status });
   }
 };
-export const tc = async <T = void>(fn: () => Promise<T>) => {
+export const tc =async   <T = void>(fn: () => Promise<T>) => {
   try {
     return await fn();
   } catch (e) {
-    console.error(e);
-    if (isHttpError(e)) return e.body.message;
-    return (e as Error)?.message || 'An unexpected error occurred';
+    return err(e);
   }
 };
 
 export const check = async (res: Response) =>
   res.ok ? res.json() : error(res.status, JSON.stringify({ res, text: await res.text() }));
+
 export const ensure = <T>(value: T | null | undefined, msg = 'Value is null or undefined'): T | never =>
   (value != null && value) ||
   ((): never => {

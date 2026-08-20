@@ -1,5 +1,5 @@
 // Hearthstone json API client with CDN URL construction
-import { cached } from '$lib/utilz/fscache';
+import { cached } from '$lib';
 import type { HS } from '@';
 import { FormatType, GameTag, GameType } from './enums';
 import { parse } from './xdefs';
