@@ -1,7 +1,7 @@
 <script lang="ts">
 import { resolve } from '$app/paths';
-import { fabio } from '$lib';
 import Categorically from '$lib/svelted/ui/app/Categorically.svelte';
+import { fabio } from '@';
 
 let { data, params } = $props();
 const summary = $derived.by(() => {

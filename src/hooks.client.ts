@@ -2,7 +2,13 @@
 import { init as Twitch } from '$lib/common/twitch/svelted/twitch.svelte';
 import { init as Games } from '$lib/core/games/games';
 import type { ClientInit, HandleClientError } from '@sveltejs/kit';
-import './lib/utilz/logger';
+
+globalThis.console = new Proxy(console, {
+  get(target, prop, receiver) {
+    const original = Reflect.get(target, prop, receiver);
+    return typeof original === 'function' ? original.bind(target, `[${String(prop)}]`) : original;
+  }
+});
 
 export const init: ClientInit = async () => {
   try {

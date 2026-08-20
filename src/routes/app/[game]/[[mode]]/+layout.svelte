@@ -1,18 +1,10 @@
-<script module lang="ts">
-export const fabio = [
-  { route: '/app/[game]/[[mode]]', title: 'home', icon: '🕹️' },
-  { route: '/app/[game]/[[mode]]/fantasy', title: 'fantasy', icon: '✨' },
-  { route: '/app/[game]/[[mode]]/pickaroo', title: 'pickaroo', icon: '⚡' },
-  { route: '/app/[game]/[[mode]]/scores', title: 'scores', icon: '🏆' }
-] as const;
-</script>
-
 <script lang="ts">
 import { invalidate } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
+import { kappa } from '$lib';
 import { usePubSub } from '$lib/common/twitch/svelted/twitch.svelte';
-import { kappa } from '$lib/utilz/stringz';
+import { fabio } from '@';
 
 let { data, params, children } = $props();
 
