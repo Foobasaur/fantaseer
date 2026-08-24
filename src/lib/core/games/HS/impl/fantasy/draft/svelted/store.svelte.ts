@@ -19,20 +19,18 @@ export const create = (mode: HS.Mode | (string & {}), pool: HS.Card[]) => {
       tier: 0,
       mana: -1,
       search: '',
+      radials: [],
       set: PREFIXER,
       card: PREFIXER,
       spell: PREFIXER,
       minion: PREFIXER,
       mechanic: PREFIXER,
-      radials: [] as strumbol[]
     }
   };
   const session = cache[mode];
   const { rules, options } = adopt(mode, pool);
   $effect(() => {
     session.filtered = [];
-    // reset to Any and regrow by discovery: the published object doubles as the pass's dedup set, so
-    // keys never need pruning — a key absent from the base-filtered set simply never gets re-added
     status.mechanics = { [PREFIXER]: options.mechanics[PREFIXER] };
     const { tier, mana, search, set, card, spell, minion, mechanic, radials } = session.filter;
     const filter: Filter = { tier, mana, search, set, card, spell, minion, mechanic, radials };
@@ -40,11 +38,11 @@ export const create = (mode: HS.Mode | (string & {}), pool: HS.Card[]) => {
     return faster(pool.length, i => {
       const card = pool[i];
       if (!rules.check(filter, card).every(Boolean)) return;
-      else if (needle.length >= 4 && !options.haystack[i].needles.includes(needle)) return;
+      else if (needle.length >= 4 && !options.keywords[i].haystack.includes(needle)) return;
       else {
-        const keywords = options.haystack[i].daggers;
-        for (const key of keywords.filter(k => !(k in status.mechanics))) status.mechanics[key] = options.mechanics[key];
-        if (mechanic.startsWith(PREFIXER) || keywords.includes(mechanic)) session.filtered.push(card);
+        const reference = options.keywords[i].reference;
+        for (const key of reference.filter(k => !(k in status.mechanics))) status.mechanics[key] = options.mechanics[key];
+        if (mechanic.startsWith(PREFIXER) || reference.includes(mechanic)) session.filtered.push(card);
       }
     });
   });

@@ -16,7 +16,7 @@ export interface Filter extends Game.Filter {
 interface Rules extends Game.Fantasy<HS.Card, HS.Mode | (string & {}), Filter> {
   readonly slider: 'tier' | 'mana';
   build(pool: HS.Card[]): {
-    haystack: { needles: string; daggers: string[] }[];
+    keywords: { haystack: string; reference: string[] }[];
     draftables: Record<string, string>;
     radials: ReturnType<typeof drawable>;
     mechanics: Record<string, string>;
@@ -29,8 +29,8 @@ const keywordz = (pool: HS.Card[], values: Iterable<unknown> = []) => {
   return pool.map(c => {
     const text = c.text?.toLowerCase();
     return {
-      needles: [c.rarity, c.name, c.flavor, c.text].join('').toLowerCase(),
-      daggers: pairs
+      haystack: [c.rarity, c.name, c.flavor, c.text].join('').toLowerCase(),
+      reference: pairs
         .filter(([key, bold]) => c.mechanics?.includes(key) || c.referencedTags?.includes(key) || text?.includes(bold))
         .map(([key]) => key)
     };
@@ -54,7 +54,7 @@ export const basic: Rules = {
     }));
     return {
       radials: drawable(blobby(import.meta.glob('$lib/assets/hs/class/*.png', { eager: true })), defs('Class', it.class)),
-      haystack: keywordz(pool, it.mechanic),
+      keywords: keywordz(pool, it.mechanic),
       draftables: defs('Set', it.set, key => SETS[key], null),
       mechanics: defs('Mechanic', it.mechanic),
       types: {
@@ -92,7 +92,7 @@ export const bg: Rules = {
     }));
     return {
       radials: drawable(blobby(import.meta.glob('$lib/assets/hs/tribes/*.jpg', { eager: true })), defs('Tribe', it.tribe)),
-      haystack: keywordz(pool, it.mechanic),
+      keywords: keywordz(pool, it.mechanic),
       draftables: defs('Unit Type', it.unit),
       mechanics: defs('Mechanic', it.mechanic)
     };
