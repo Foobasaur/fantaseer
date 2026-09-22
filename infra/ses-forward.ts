@@ -1,6 +1,6 @@
 /// <reference path="../.sst/platform/config.d.ts" />
 
-const DOMAIN = 'fantaseer.foobasaur.com';
+const DOMAIN = 'foobasaur.com';
 const PREFIX = 'inbound/';
 
 export function setupEmailForwarding() {

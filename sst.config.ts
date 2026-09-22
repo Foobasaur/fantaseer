@@ -29,7 +29,7 @@ export default $config({
       // bundle pointing at the domain ships on Twitch.
       transform: {
         cdn: cdnArgs => {
-          if ($app.stage === 'beta') cdnArgs.domain = 'beta.fantaseer.foobasaur.com';
+          if ($app.stage === 'beta') cdnArgs.domain = { name: 'fantaseer.foobasaur.com', dns: sst.aws.dns({ override: true }) };
         },
         server: args => {
           args.memory = '4096 MB';
