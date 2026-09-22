@@ -12,13 +12,15 @@ const env = (k: string): string => {
 };
 const FORWARD_TO = env('MAIL_FORWARD_TO');
 const PREFIX = process.env.MAIL_PREFIX ?? '';
-const FROM_ADDRESS = `forward@${Resource.MailIdentity.sender}`;
+const DOMAIN = Resource.MailIdentity.sender;
+const FALLBACK_FROM = `forward@${DOMAIN}`;
 
 const DROP = new Set(['return-path', 'sender', 'dkim-signature', 'message-id', 'from', 'reply-to']);
 
 export const handler = async (event: SESEvent): Promise<void> => {
   const rec = event.Records[0]!.ses;
   const { messageId } = rec.mail;
+  const from = rec.receipt.recipients.find(r => r.toLowerCase().endsWith(`@${DOMAIN}`)) ?? FALLBACK_FROM;
 
   const { spamVerdict, virusVerdict } = rec.receipt;
   if (spamVerdict?.status === 'FAIL' || virusVerdict?.status === 'FAIL') {
@@ -75,13 +77,12 @@ export const handler = async (event: SESEvent): Promise<void> => {
   const display =
     namePart.replace(/["\<>]/g, '').trim() || origFrom.replace(/["\<>]/g, '').trim() || 'unknown sender';
 
-  kept.push(`From: "${display}" <${FROM_ADDRESS}>`);
-  kept.push(`Reply-To: ${origReplyTo || origFrom || FROM_ADDRESS}`);
+  kept.push(`From: "${display.replace('@', ' at ')} via Fantaseer" <${from}>`);
+  kept.push(`Reply-To: ${origReplyTo || origFrom || from}`);
   kept.push(`X-Original-Message-Id: ${messageId}`);
 
   await ses.send(
     new SendEmailCommand({
-      FromEmailAddress: FROM_ADDRESS,
       Destination: { ToAddresses: [FORWARD_TO] },
       Content: { Raw: { Data: Buffer.concat([Buffer.from(kept.join(eol)), body]) } }
     })

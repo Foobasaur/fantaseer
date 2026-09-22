@@ -2,7 +2,7 @@ import { assert, beforeEach, describe, it, vi } from 'vitest';
 
 const calls = vi.hoisted(() => ({
   s3: [] as { input: Record<string, string> }[],
-  ses: [] as { input: { FromEmailAddress: string; Destination: { ToAddresses: string[] }; Content: { Raw: { Data: Uint8Array } } } }[],
+  ses: [] as { input: { FromEmailAddress?: string; Destination: { ToAddresses: string[] }; Content: { Raw: { Data: Uint8Array } } } }[],
   object: new Uint8Array()
 }));
 
@@ -41,9 +41,11 @@ const { handler } = await import('../functions/ses-forwarder/index');
 
 type Event = Parameters<typeof handler>[0];
 
-const event = (messageId: string, spam = 'PASS', virus = 'PASS'): Event =>
+const event = (messageId: string, spam = 'PASS', virus = 'PASS', recipients = ['hello@foobasaur.com']): Event =>
   ({
-    Records: [{ ses: { mail: { messageId }, receipt: { spamVerdict: { status: spam }, virusVerdict: { status: virus } } } }]
+    Records: [
+      { ses: { mail: { messageId }, receipt: { recipients, spamVerdict: { status: spam }, virusVerdict: { status: virus } } } }
+    ]
   }) as unknown as Event;
 
 const message = (eol: string, headers: string[], body: string) => Buffer.from(headers.join(eol) + eol + eol + body);
@@ -81,13 +83,13 @@ describe('ses forwarder handler', () => {
     assert.deepEqual(calls.s3[0]!.input, { Bucket: 'mail-store', Key: 'inbound/msg-1' });
 
     const { input, raw } = sent();
-    assert.equal(input.FromEmailAddress, 'forward@foobasaur.com');
+    assert.isUndefined(input.FromEmailAddress);
     assert.deepEqual(input.Destination.ToAddresses, ['inbox@example.org']);
 
     const sep = raw.indexOf('\r\n\r\n');
     const headers = raw.slice(0, sep).split('\r\n');
     assert.equal(raw.slice(sep + 4), 'body line 1\r\nbody line 2\r\n');
-    assert.include(headers, 'From: "Alice Example" <forward@foobasaur.com>');
+    assert.include(headers, 'From: "Alice Example via Fantaseer" <hello@foobasaur.com>');
     assert.include(headers, 'Reply-To: "Alice Example" <alice@example.org>');
     assert.include(headers, 'X-Original-Message-Id: msg-1');
     assert.include(headers, 'Received: from mx.example.org');
@@ -107,6 +109,25 @@ describe('ses forwarder handler', () => {
     const headers = raw.split('\r\n\r\n')[0]!.split('\r\n');
     assert.include(headers, 'Reply-To: replies@example.org');
     assert.lengthOf(headers.filter(l => /^Reply-To:/i.test(l)), 1);
+  });
+
+  it('never puts a bare address in the display name', async () => {
+    calls.object = message('\r\n', [...inbound.filter(l => !l.startsWith('From:')), 'From: bob@example.org'], 'x');
+    await handler(event('msg-6'));
+
+    const { raw } = sent();
+    const headers = raw.split('\r\n\r\n')[0]!.split('\r\n');
+    assert.include(headers, 'From: "bob at example.org via Fantaseer" <hello@foobasaur.com>');
+    assert.include(headers, 'Reply-To: bob@example.org');
+  });
+
+  it('falls back to the forward address when no recipient is on the domain', async () => {
+    calls.object = message('\r\n', inbound, 'x');
+    await handler(event('msg-7', 'PASS', 'PASS', ['someone@else.org']));
+
+    const { input, raw } = sent();
+    assert.isUndefined(input.FromEmailAddress);
+    assert.include(raw.split('\r\n\r\n')[0]!.split('\r\n'), 'From: "Alice Example via Fantaseer" <forward@foobasaur.com>');
   });
 
   it('handles LF-only messages with LF output', async () => {
