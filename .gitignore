@@ -33,4 +33,4 @@ vite.config.ts.timestamp-*
 .sst
 
 # AI copilot
-.claude
+.claude/scratchpad
