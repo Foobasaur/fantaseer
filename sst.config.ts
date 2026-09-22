@@ -44,5 +44,10 @@ export default $config({
         TWITCH_EXTENSION_CLIENT_ID: process.env.TWITCH_EXTENSION_CLIENT_ID!
       }
     });
+
+    if ($app.stage === 'beta') {
+      const { setupEmailForwarding } = await import('./infra/ses-forward');
+      setupEmailForwarding();
+    }
   }
 });
