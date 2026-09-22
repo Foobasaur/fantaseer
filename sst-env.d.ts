@@ -6,6 +6,19 @@
 
 declare module "sst" {
   export interface Resource {
+    "MailForwarder": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
+    "MailIdentity": {
+      "configSet": string
+      "sender": string
+      "type": "sst.aws.Email"
+    }
+    "MailStore": {
+      "name": string
+      "type": "sst.aws.Bucket"
+    }
     "MyPostgres": {
       "database": string
       "host": string
