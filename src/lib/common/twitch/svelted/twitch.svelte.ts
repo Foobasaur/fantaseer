@@ -9,13 +9,14 @@ export const twitch = $state<toothy<Extension>>(import.meta.env.VITE_TARGET === 
 
 let viewer = $state<toothy<Twitch.Viewer>>();
 const authHander = async () => {
-  if (!twitch) return;
-  return (viewer ||=
-    (await (h => ebs(resolve('/api/configure/[kind]', { kind: 'viewer' })).post<Twitch.Viewer>(h))(await twitch.Viewer())));
+  if (!twitch || !twitch.viewer.id) return;
+  return (viewer ||= await (h => ebs(resolve('/api/configure/[kind]', { kind: 'viewer' })).post<Twitch.Viewer>(h))(
+    await twitch.Viewer()
+  ));
 };
 
 export const init = async () => {
-  if(!twitch) return;
+  if (!twitch) return;
   try {
     await waitFor(() => [twitch.auth, twitch.ctx, twitch.viewer].every(Boolean), {
       step: 300,
@@ -52,23 +53,28 @@ export const usePubSub = (
       (handler as (d: typeof data) => void)(data)
   }));
   onMount(() => {
-    if(!twitch) return;
+    if (!twitch) return;
     events.forEach(({ event, handler }) => twitch.on(event, handler));
     return () => events.forEach(({ event, handler }) => twitch.off(event, handler));
   });
 };
 
 export const useAuthListener = () => {
+  let isLinked = $state(viewer && twitch && twitch.viewer.isLinked);
   onMount(() => {
-    if(!twitch) return;
-    twitch.on('authorized', authHander);
-    return () => twitch.off('authorized', authHander);
+    if (!twitch) return;
+    const authorixed = async () => {
+      await authHander();
+      isLinked = !!(viewer && twitch && twitch.viewer.isLinked);
+    };
+    twitch.on('authorized', authorixed);
+    return () => twitch.off('authorized', authorixed);
   });
 
   // prettier-ignore
   return {
     link: () =>twitch && twitch.actions.requestIdShare(),
-    get linked() { return !twitch || twitch.viewer.isLinked; },
+    get linked() { return isLinked },
     get viewer() { return viewer; }
   };
 };

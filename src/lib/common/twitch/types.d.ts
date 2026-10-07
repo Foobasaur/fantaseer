@@ -224,6 +224,6 @@ export namespace Twitch {
     }
   }
 
-  type Viewer = Twitch.HelixUser;
+  type Viewer = Ext.HelixUser;
   type Player = { validated: oauth2.Validated; user: oauth2.UserInfo };
 }

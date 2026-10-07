@@ -6,7 +6,7 @@ import { gzipSync } from 'node:zlib';
 
 // const ALLOWED_ORIGIN = ['Access-Control-Allow-Origin', `https://${env.TWITCH_EXTENSION_CLIENT_ID}.ext-twitch.tv`];
 export const init: ServerInit = async () => {
-  if (process.env.VITE_TARGET === 'extension') return;
+  if (process.env.VITE_TARGET === 'extension' && !process.env.VITE_BANG) return;
   else Games([hs]);
 };
 

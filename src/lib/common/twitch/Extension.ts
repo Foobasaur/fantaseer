@@ -11,7 +11,7 @@ export class Extension extends Emitter {
   ctx?: TT.Ext.Context;
   pubsub: PubSub;
 
-   constructor() {
+  constructor() {
     super();
     // Set up authorization handler
     this.ext.onAuthorized(auth => {
